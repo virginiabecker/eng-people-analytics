@@ -1,12 +1,12 @@
 # Projeto de Engenharia de Dados
 
-Este repositório contém um projeto de Engenharia de Dados que utiliza **Google Cloud Run**, **Python** e **GitHub** para criar uma solução escalável e eficiente para o processamento e análise de dados.
+Este repositório contém um projeto de Engenharia de Dados que utiliza **Google Cloud Run**, **Python** e **GitHub** para criar uma solução escalável e eficiente para o processamento e análise de dados do projeto voluntário Pipoca Ágil.
 
 ---
 
 ## 📖 Visão Geral
 
-O objetivo deste projeto é construir uma pipeline de dados moderna e serverless. O projeto aproveita o **Cloud Run** para executar jobs de processamento, **Python** como linguagem de programação principal e **GitHub** como plataforma para versionamento e integração contínua.
+O objetivo deste projeto é construir um pipeline de dados moderna e serverless. O projeto aproveita o **Cloud Run** para executar jobs de processamento, **Python** como linguagem de programação principal e **GitHub** como plataforma para versionamento e integração contínua.
 
 ---
 
@@ -16,7 +16,7 @@ O objetivo deste projeto é construir uma pipeline de dados moderna e serverless
 - **Python**: Linguagem de programação principal para desenvolvimento da pipeline de dados.
 - **GitHub**: Gerenciamento de código-fonte, controle de versão e integração contínua.
 - **Google Cloud Storage**: Para armazenar dados brutos e processados (opcional).
-- **BigQuery**: Para análise de dados estruturados (opcional).
+- **BigQuery**: Para análise de dados estruturados.
 
 ---
 
@@ -35,3 +35,9 @@ O objetivo deste projeto é construir uma pipeline de dados moderna e serverless
 ├── README.md                # Documentação do projeto
 └── config/                  # Configurações do ambiente
     └── settings.yaml        # Configuração do projeto
+
+---
+
+## 🚀 Arquitetura de dados
+
+![Arquitetura de dados Pipoca Agil](png/arquitetura_dados_pipoca.png)
