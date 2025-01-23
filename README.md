@@ -1,22 +1,21 @@
-# Projeto de Engenharia de Dados
+# Projeto People Analytics Pipoca Ágil
 
-Este repositório contém um projeto de Engenharia de Dados que utiliza **Google Cloud Run**, **Python** e **GitHub** para criar uma solução escalável e eficiente para o processamento e análise de dados do projeto voluntário Pipoca Ágil.
+Este repositório contém um projeto de Engenharia de Dados que utiliza **ferramentas open source**, **Python** e **GitHub** para criar uma solução escalável e eficiente para o processamento e análise de dados do projeto voluntário Pipoca Ágil.
 
 ---
 
 ## 📖 Visão Geral
 
-O objetivo deste projeto é construir um pipeline de dados moderna e serverless. O projeto aproveita o **Cloud Run** para executar jobs de processamento, **Python** como linguagem de programação principal e **GitHub** como plataforma para versionamento e integração contínua.
+O objetivo deste projeto é construir um pipeline de dados low cost e que entregue valor ao negócio. O projeto aproveita o **Python** como linguagem de programação principal, **GitHub** como plataforma para versionamento e integração contínua, **Windowns Scheduler** como ferramenta de orquestração e **Discord** como ferramenta para observabilidade da execução dos pipelines.
 
 ---
 
 ## 🛠️ Tecnologias Utilizadas
 
-- **Google Cloud Run**: Serviço gerenciado para execução de contêineres serverless.
 - **Python**: Linguagem de programação principal para desenvolvimento da pipeline de dados.
 - **GitHub**: Gerenciamento de código-fonte, controle de versão e integração contínua.
-- **Google Cloud Storage**: Para armazenar dados brutos e processados (opcional).
-- **BigQuery**: Para análise de dados estruturados.
+- **Windowns Scheduler***: Para orquestração dos pipelines
+- **Discord**: Como ferramenta de observabilidade
 
 ---
 
@@ -24,20 +23,19 @@ O objetivo deste projeto é construir um pipeline de dados moderna e serverless.
 
 ```plaintext
 .
-├── app/                     # Código-fonte principal
-│   ├── main.py              # Arquivo principal da aplicação
-│   ├── requirements.txt     # Dependências do projeto
-│   └── utils/               # Scripts utilitários
-├── Dockerfile               # Configuração do contêiner
-├── .github/
-│   └── workflows/           # Configurações de CI/CD
-│       └── deploy.yaml      # Pipeline de CI/CD
-├── README.md                # Documentação do projeto
-└── config/                  # Configurações do ambiente
-    └── settings.yaml        # Configuração do projeto
+├── app/                                            # Código-fonte principal
+│   ├── main.py                                     # Arquivo principal da aplicação
+│   ├── requirements.txt                            # Dependências do projeto
+│   └── utils/                                      # Scripts utilitários
+├── developer/                                      # Código-fonte desenvolvimento
+│   ├── script.ipynb                                # Arquivo Jupyter Notebook para desenvolvimento
+├── README.md                                       # Documentação do projeto
+├── png/                                            # Imagens do projeto
+│   ├── arquitetura_dados_people_analytics.png      # Arquivo png com imagem da arquitetura de dados
 
+```
 ---
 
-## 🚀 Arquitetura de dados
+## 🚀 Arquitetura de dados People Analytics
 
-![Arquitetura de dados Pipoca Agil](png/arquitetura_dados_pipoca.png)
+![Arquitetura de dados People Analytics](png\arquitetura_dados_people_analytics.png)
