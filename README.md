@@ -24,7 +24,10 @@ O objetivo deste projeto é construir um pipeline de dados low cost e que entreg
 ```plaintext
 .
 ├── app/                                            # Código-fonte principal
-│   ├── main.py                                     # Arquivo principal da aplicação
+│   ├── avaliacao_projeto.py                        # Arquivo python de ETL do formulário de avaliacao do projeto
+│   ├── avaliacao_coletiva.py                       # Arquivo python de ETL do formulário de avaliacao coletiva
+│   ├── avaliacao_individual.py                     # Arquivo python de ETL do formulário de avaliacao individual
+│   ├── autoavalicao.py                             # Arquivo python de ETL do formulário de autoavalicao
 │   ├── requirements.txt                            # Dependências do projeto
 │   └── utils/                                      # Scripts utilitários
 ├── developer/                                      # Código-fonte desenvolvimento
@@ -38,4 +41,4 @@ O objetivo deste projeto é construir um pipeline de dados low cost e que entreg
 
 ## 🚀 Arquitetura de dados People Analytics
 
-![Arquitetura de dados People Analytics](png\arquitetura_dados_people_analytics.png)
+![Arquitetura de dados People Analytics](/png/arquitetura_dados_people_analytics.png)
