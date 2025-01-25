@@ -1,0 +1,6 @@
+# Arquivos a serem ignorados
+*.log
+
+# Ambiente  virtual a ser ignorado
+venv/
+
