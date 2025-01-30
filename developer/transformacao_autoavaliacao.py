@@ -16,12 +16,13 @@ class DataExtractor:
 
 class DataTransformer:
     '''Essa classe vai reunir os métodos para padronização dos títulos das colunas, validação dos campos de data,
-       email e nome dos participantes.'''
+       email e nome dos participantes. 
+       Arg: dataframe com as respostas do questionário.'''
     def __init__(self,df_raw):
         self.df_raw=df_raw
-    '''Função para padronizar as perguntas, removendo caracteres especiais, pontuação e acentos.'''
-    def retirar_acento(palavras):
-        nova = palavras.lower()
+    '''Função para padronizar uma pergunta, removendo caracteres especiais, pontuação e acentos.'''
+    def retirar_acento(frase):
+        nova = frase.lower()
         nova = re.sub(r'[àáâãäå]', 'a', nova)
         nova = re.sub(r'[èéêë]', 'e', nova)
         nova = re.sub(r'[ìíîï]', 'i', nova)
@@ -37,9 +38,8 @@ class DataTransformer:
         fase4 = re.sub(' ','_',fase3)
         return fase4
 
-    '''Função para validar os emails preenchidos'''
-    
-    def validar_email(email):
+    '''Função para validar os emails preenchidos usando regex. Essa funçao deve ser aplicada a cada string'''
+    def verificar_email(email):
         padraoEmail = r'^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$'
         padraoCorreto = re.compile(padraoEmail)
         if not re.match(padraoCorreto,email):
@@ -48,12 +48,12 @@ class DataTransformer:
            return "Pass"
         
     '''Função para padronizar as datas do datestamp'''
-    def padronizar_data(dataStamp):
+    def padronizar_datastring(dataStamp):
         dt = parse(str(dataStamp))
         return dt.strftime("%d-%m-%Y %H:%M:%S") 
     
     '''Função para validar os nomes. Eles devem ter pelo menos 3 letras, não podem começar com números e o campo deve ser uma string.'''
-    def validar_nome(nome,minlen=3):
+    def verificar_nome(nome,minlen=3):
         if type(nome) !=str:
             return False
         elif len(nome)<minlen:
@@ -75,13 +75,39 @@ class DataTransformer:
                                   'dsCapacidadeTimeConcluirTarefasPlanejadasSprint','dsRelevanciaProjeto','dsAlinhamentoProjetoObjetivoProfissional',
                                   'dsContribuicaoEntregaValor','dsNivelCompetenciaDesempenhoProjeto','dsContribuicaoQualidadeEntregas',
                                   'dsRegularidadeQualidadeComunicacaoTimeSprint','dsQueMelhorarAtuacao','dsComentarioSugestao']
-        return df_renomeada
+        self.df_raw = df_renomeada
         
-    
+    '''Função final para validar o email preenchido no formulário'''
+    def validar_email(self):
+        df_copy = self.df_raw.copy()
+        df_copy['emailRespondente'] = df_copy['emailRespondente'].apply(lambda x: x if self.verificar_email(x)=='Pass' else None)
+        self.df_raw=df_copy
+
+    '''Função para validar os nomes preenchidos no formulário'''
+    def validar_nome(self):
+        df_copy = self.df_raw.copy() 
+        df_copy['nomeRespondente'] = df_copy['nomeRespondente'].apply(lambda x: x if self.verificar_nome is True else None)
+        self.df_raw=df_copy
+
+    '''Função final para padronizar as datas em d-m-Y H:M:S'''
+    def padronizar_datas(self):
+        df_copy = self.df_raw.copy()
+        df_copy['timestamp'] = df_copy['timestamp'].apply(self.padronizar_datastring)
+        self.df_raw=df_copy
+
+    '''Função para aplicar a normalização de perguntas da primeira linha da tabela'''
+    def normalizar_perguntas_df(self):
+        df_copy = self.df_raw.copy()
+        df_copy.iloc[0,2:]=df_copy.iloc[0,2:].apply(self.normalizar_perguntas)
+        self.df_raw=df_copy
+
+
     '''Função com todas as etapas'''
-    def transformar_planilhas(self,normalizar_perguntas,validar_email,padronizar_data,validar_nome,renomear_colunas_autoavaliacao):
-        df_renomeada = renomear_colunas_autoavaliacao()
-        df_renomeada.iloc[0,2:]=df_renomeada.iloc[0,2:].apply(normalizar_perguntas)
-        df_renomeada['emailRespondente'] = df_renomeada['emailRespondente'].apply(validar_email)
-        df_renomeada['nomeRespondente'] = df_renomeada['nomeRespondente'].apply(validar_nome)
-        df_renomeada['timestamp'] = df_renomeada['timestamp'].apply(padronizar_data)
+    def transformar_dados(self):
+        self.normalizar_perguntas_df()
+        self.renomear_colunas_autoavaliacao()
+        self.validar_email()
+        self.validar_nome()
+        self.padronizar_datastring()
+        
+        
