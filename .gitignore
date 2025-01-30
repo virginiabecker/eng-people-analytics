@@ -4,3 +4,5 @@
 # Ambiente  virtual a ser ignorado
 venv/
 
+#Ignorar as credenciais do sistema
+credentials/
