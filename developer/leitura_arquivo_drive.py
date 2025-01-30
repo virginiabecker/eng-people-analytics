@@ -46,12 +46,13 @@ def get_sheet_data(sheet):
 def main():
     setup_logging()
     credentials_path = 'credentials\people-analytics-pipoca-agil-google-drive.json'  # Atualize com o caminho correto
-    sheet_id = '1FpDuXzn7HIeDh5ZCHxUVtiQGBY3XiQ_v196z56MuHag'  # Substitua pelo caminho da sua planilha
+    sheet_id = '1NmhI61q2bZJBWr3Vb3C_Y6siGUOC1rk66FOXu3gUN00'  # Substitua pelo caminho da sua planilha
     
     client = authenticate_google_sheets(credentials_path)
     sheet = get_google_sheet(client, sheet_id)
     data = get_sheet_data(sheet)
     
+    #printa os dados - necessário ajustar para salvar em um arquivo que posteriormente será inserido na pasta raw do Google Drive
     for row in data:
         print(row)
 

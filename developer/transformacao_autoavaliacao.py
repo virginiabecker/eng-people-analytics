@@ -1,113 +1,118 @@
 import pandas as pd
 import re
-from  dateutil.parser import parse
+from dateutil.parser import parse
+import io
+from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
+from googleapiclient.discovery import build
+from google.oauth2.service_account import Credentials
 
-#ler arquivo localmente e deixar a primeira linha como campo ao invés do nome da coluna
-#planilha_autoavaliacao = pd.read_excel(r'autoavaliacao_pipoca_agil.xlsx',header=None)
+# Caminho para a credencial da conta de serviço
+CREDENTIALS_PATH = 'credentials/people-analytics-pipoca-agil-google-drive.json'
 
+# Configuração da autenticação com conta de serviço
+class GoogleDriveManager:
+    def __init__(self):
+        self.authenticate()
+
+    def authenticate(self):
+        creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=[
+            'https://www.googleapis.com/auth/drive'
+        ])
+        self.service = build('drive', 'v3', credentials=creds)
+
+    def get_file_by_name(self, folder_id_origem, file_name):
+        query = f"'{folder_id_origem}' in parents and name = '{file_name}' and trashed = false"
+        result = self.service.files().list(q=query).execute().get('files', [])
+        return result[0] if result else None
+
+    def download_excel(self, file_id):
+        request = self.service.files().get_media(fileId=file_id)
+        file_stream = io.BytesIO()
+        downloader = MediaIoBaseDownload(file_stream, request)
+        done = False
+        while not done:
+            status, done = downloader.next_chunk()
+        file_stream.seek(0)
+        return file_stream
+
+    def upload_file(self, folder_id_origem, file_name, file_path):
+        file_metadata = {'name': file_name, 'parents': [folder_id_origem]}
+        media = MediaFileUpload(file_path, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        file = self.service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        return file['id']
+
+# Extração de dados
 class DataExtractor:
-    """Classe para ler o arquivo"""
-    def __init__(self,pathfile):
-        self.pathfile = pathfile        
-        
-    def load_excelfile(self.pathfile):
-        respostas_formulario = pd.read_excel(self.pathfile,header=None)
+    def __init__(self, drive_manager, folder_id_origem, file_name):
+        self.drive_manager = drive_manager
+        self.folder_id_origem = folder_id_origem
+        self.file_name = file_name
 
+    def load_excelfile(self):
+        file_data = self.drive_manager.get_file_by_name(self.folder_id_origem, self.file_name)
+        if not file_data:
+            raise FileNotFoundError("Arquivo não encontrado no Google Drive")
+        file_stream = self.drive_manager.download_excel(file_data['id'])
+        return pd.read_excel(file_stream, header=None)
 
+# Transformação de dados
 class DataTransformer:
-    '''Essa classe vai reunir os métodos para padronização dos títulos das colunas, validação dos campos de data,
-       email e nome dos participantes. 
-       Arg: dataframe com as respostas do questionário.'''
-    def __init__(self,df_raw):
-        self.df_raw=df_raw
-    '''Função para padronizar uma pergunta, removendo caracteres especiais, pontuação e acentos.'''
-    def retirar_acento(frase):
+    def __init__(self, df_raw):
+        self.df_raw = df_raw
+    
+    def retirar_acento(self, frase):
         nova = frase.lower()
         nova = re.sub(r'[àáâãäå]', 'a', nova)
         nova = re.sub(r'[èéêë]', 'e', nova)
         nova = re.sub(r'[ìíîï]', 'i', nova)
         nova = re.sub(r'[òóôõö]', 'o', nova)
         nova = re.sub(r'[ùúûü]', 'u', nova)
-        nova = re.sub(r'ç','c',nova)
+        nova = re.sub(r'ç', 'c', nova)
         return nova
     
-    def normalizar_perguntas(pergunta,retirar_acento):
+    def normalizar_perguntas(self, pergunta):
         fase1 = pergunta.split('.')[1].lstrip()
-        fase2 = re.sub(r'[^\w\s]','',fase1)
-        fase3 = retirar_acento(fase2)
-        fase4 = re.sub(' ','_',fase3)
+        fase2 = re.sub(r'[^\w\s]', '', fase1)
+        fase3 = self.retirar_acento(fase2)
+        fase4 = re.sub(' ', '_', fase3)
         return fase4
-
-    '''Função para validar os emails preenchidos usando regex. Essa funçao deve ser aplicada a cada string'''
-    def verificar_email(email):
-        padraoEmail = r'^[\w\-\.]+@([\w-]+\.)+[\w-]{2,}$'
-        padraoCorreto = re.compile(padraoEmail)
-        if not re.match(padraoCorreto,email):
-           return "Email Incorreto"
-        else:
-           return "Pass"
-        
-    '''Função para padronizar as datas do datestamp'''
-    def padronizar_datastring(dataStamp):
-        dt = parse(str(dataStamp))
-        return dt.strftime("%d-%m-%Y %H:%M:%S") 
     
-    '''Função para validar os nomes. Eles devem ter pelo menos 3 letras, não podem começar com números e o campo deve ser uma string.'''
-    def verificar_nome(nome,minlen=3):
-        if type(nome) !=str:
-            return False
-        elif len(nome)<minlen:
-            return False
-        elif not re.match('^[a-z0-9.-]*$',nome):
-            return False
-        elif nome[0].isnumeric():
-            return False
-        else:
-            return True 
-    '''Função para renomear os nomes das colunas e deixar elas mais legiveis.'''
+    def verificar_email(self, email):
+        padraoEmail = r'^[\w\-.]+@[\w-]+\.[a-zA-Z]{2,}$'
+        return "Pass" if re.match(padraoEmail, email) else "Email Incorreto"
+    
+    def padronizar_datastring(self, dataStamp):
+        return parse(str(dataStamp)).strftime("%d-%m-%Y %H:%M:%S")
+    
     def renomear_colunas_autoavaliacao(self):
-        df_renomeada = self.df_raw.copy()
-        df_renomeada.columns = ['timestamp','emailRespondente','nomeRespondente','funcaoDesempenha','equipeParticipante',
-                                  'dsCapacidadeConcluirSprint','dsSuporteInicioAtividades','ClarezaProgressoTimeSprint',
-                                  'ParticipacaoDailiesReunioesImportantesSprint','dsCapacidadeConcluirTarefasPlanejadasSprint',
-                                  'dsPresencaParticipacaoReunioesSprint','dsDisponibilidadeCumprirCompromissosSprint',
-                                  'dsConfiancaCompreensaoPraticasScrum', 'dsTimeTemPapeisNecessariosScrumMasterPODesenvolvedoresUX/UIQA',
-                                  'dsCapacidadeTimeConcluirTarefasPlanejadasSprint','dsRelevanciaProjeto','dsAlinhamentoProjetoObjetivoProfissional',
-                                  'dsContribuicaoEntregaValor','dsNivelCompetenciaDesempenhoProjeto','dsContribuicaoQualidadeEntregas',
-                                  'dsRegularidadeQualidadeComunicacaoTimeSprint','dsQueMelhorarAtuacao','dsComentarioSugestao']
-        self.df_raw = df_renomeada
-        
-    '''Função final para validar o email preenchido no formulário'''
+        colunas = ['timestamp', 'emailRespondente', 'nomeRespondente', 'funcaoDesempenha', 'equipeParticipante']
+        self.df_raw.columns = colunas + [f'pergunta_{i}' for i in range(len(self.df_raw.columns) - len(colunas))]
+    
     def validar_email(self):
-        df_copy = self.df_raw.copy()
-        df_copy['emailRespondente'] = df_copy['emailRespondente'].apply(lambda x: x if self.verificar_email(x)=='Pass' else None)
-        self.df_raw=df_copy
-
-    '''Função para validar os nomes preenchidos no formulário'''
-    def validar_nome(self):
-        df_copy = self.df_raw.copy() 
-        df_copy['nomeRespondente'] = df_copy['nomeRespondente'].apply(lambda x: x if self.verificar_nome is True else None)
-        self.df_raw=df_copy
-
-    '''Função final para padronizar as datas em d-m-Y H:M:S'''
-    def padronizar_datas(self):
-        df_copy = self.df_raw.copy()
-        df_copy['timestamp'] = df_copy['timestamp'].apply(self.padronizar_datastring)
-        self.df_raw=df_copy
-
-    '''Função para aplicar a normalização de perguntas da primeira linha da tabela'''
-    def normalizar_perguntas_df(self):
-        df_copy = self.df_raw.copy()
-        df_copy.iloc[0,2:]=df_copy.iloc[0,2:].apply(self.normalizar_perguntas)
-        self.df_raw=df_copy
-
-
-    '''Função com todas as etapas'''
+        self.df_raw['emailRespondente'] = self.df_raw['emailRespondente'].apply(lambda x: x if self.verificar_email(x) == 'Pass' else None)
+    
     def transformar_dados(self):
-        self.normalizar_perguntas_df()
         self.renomear_colunas_autoavaliacao()
         self.validar_email()
-        self.validar_nome()
-        self.padronizar_datastring()
-        
-        
+        self.df_raw['timestamp'] = self.df_raw['timestamp'].apply(self.padronizar_datastring)
+        return self.df_raw
+
+# Processo principal
+def processar_arquivo(folder_id_origem, folder_id_destino, file_name):
+    drive_manager = GoogleDriveManager()
+    extractor = DataExtractor(drive_manager, folder_id_origem, file_name)
+    df = extractor.load_excelfile()
+    transformer = DataTransformer(df)
+    df_transformado = transformer.transformar_dados()
+    file_path = f"{file_name}_processado.xlsx"
+    df_transformado.to_excel(file_path, index=False)
+    drive_manager.upload_file(folder_id_destino, file_path, file_path)
+    print("Arquivo processado e salvo no Google Drive.")
+
+# IDs das pastas
+folder_id_origem = "1E6AEUGqRp3IJsWV4qAwMRJK_tMD7wDYT" #pasta people_analytics/raw/
+folder_id_destino = "1WJlq1C_uLq9J3Ta-lVAkQVv7AzblftsD" #pasta people_analytics/trusted/
+file_name = "autoavaliacao_pipoca.xlsx"
+
+# Executar o processamento
+processar_arquivo(folder_id_origem, folder_id_destino, file_name)
