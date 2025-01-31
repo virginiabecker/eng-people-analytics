@@ -5,6 +5,8 @@ import io
 from googleapiclient.http import MediaIoBaseDownload, MediaFileUpload
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
+import requests
+from datetime import datetime
 
 # Caminho para a credencial da conta de serviço
 CREDENTIALS_PATH = 'credentials/people-analytics-pipoca-agil-google-drive.json'
@@ -22,7 +24,9 @@ class GoogleDriveManager:
 
     def get_file_by_name(self, folder_id_origem, file_name):
         query = f"'{folder_id_origem}' in parents and name = '{file_name}' and trashed = false"
+        #print(f"Query: {query}")
         result = self.service.files().list(q=query).execute().get('files', [])
+        #print(f"Result: {result}")
         return result[0] if result else None
 
     def download_excel(self, file_id):
@@ -81,8 +85,14 @@ class DataTransformer:
         padraoEmail = r'^[\w\-.]+@[\w-]+\.[a-zA-Z]{2,}$'
         return "Pass" if re.match(padraoEmail, email) else "Email Incorreto"
     
-    def padronizar_datastring(self, dataStamp):
-        return parse(str(dataStamp)).strftime("%d-%m-%Y %H:%M:%S")
+    def padronizar_datastring(self,dataStamp): 
+        try:
+        # Attempt to parse the string into a datetime object
+          parsed_date = parse(str(dataStamp))
+          return parsed_date.strftime("%d-%m-%Y %H:%M:%S")
+        except (ValueError, TypeError):
+        # Return a default value or handle invalid input gracefully
+          return "Invalid Date"
     
     def renomear_colunas_autoavaliacao(self):
         colunas = ['timestamp', 'emailRespondente', 'nomeRespondente', 'funcaoDesempenha', 'equipeParticipante']
@@ -95,7 +105,7 @@ class DataTransformer:
         self.renomear_colunas_autoavaliacao()
         self.validar_email()
         self.df_raw['timestamp'] = self.df_raw['timestamp'].apply(self.padronizar_datastring)
-        return self.df_raw
+        return self.df_raw    
 
 # Processo principal
 def processar_arquivo(folder_id_origem, folder_id_destino, file_name):
@@ -112,7 +122,7 @@ def processar_arquivo(folder_id_origem, folder_id_destino, file_name):
 # IDs das pastas
 folder_id_origem = "1E6AEUGqRp3IJsWV4qAwMRJK_tMD7wDYT" #pasta people_analytics/raw/
 folder_id_destino = "1WJlq1C_uLq9J3Ta-lVAkQVv7AzblftsD" #pasta people_analytics/trusted/
-file_name = "autoavaliacao_pipoca.xlsx"
+file_name = "autoavalicao_pipoca.xlsx"
 
 # Executar o processamento
 processar_arquivo(folder_id_origem, folder_id_destino, file_name)
