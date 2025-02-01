@@ -11,7 +11,6 @@ class GoogleAuthenticator:
     """Gerencia a autenticação do Google Sheets e Google Drive."""
 
     def __init__(self):
-        """Inicializa a autenticação com as credenciais fornecidas."""
         self.sheets_client = None
         self.drive_service = None
         self.authenticate()
@@ -26,10 +25,7 @@ class GoogleAuthenticator:
             credentials_path = 'credentials/people-analytics-pipoca-agil-google-drive.json'
             credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
 
-            # Cliente para Google Sheets
             self.sheets_client = gspread.authorize(credentials)
-
-            # Cliente para Google Drive
             self.drive_service = build('drive', 'v3', credentials=credentials)
 
             logging.info("Autenticação bem-sucedida no Google Sheets e Google Drive.")
@@ -41,7 +37,6 @@ class GoogleSheetsManager:
     """Gerencia operações com o Google Sheets."""
 
     def __init__(self, client):
-        """Inicializa o gerenciador do Google Sheets."""
         self.client = client
         self.sheet_ids = {
             'autoavaliacao': '1NmhI61q2bZJBWr3Vb3C_Y6siGUOC1rk66FOXu3gUN00',
@@ -79,8 +74,7 @@ class GoogleSheetsManager:
 class GoogleDriveManager:
     """Gerencia operações de upload de arquivos no Google Drive."""
 
-    def __init__(self, drive_service, camada):
-        """Inicializa o gerenciador do Google Drive."""
+    def __init__(self, drive_service):
         self.drive_service = drive_service
         self.Id_camada = {
             'raw': '1E6AEUGqRp3IJsWV4qAwMRJK_tMD7wDYT',
@@ -109,26 +103,30 @@ class GoogleDriveManager:
         except Exception as e:
             logging.error(f"Erro ao baixar o arquivo: {e}")
 
-    def save_data_to_excel_and_upload(self, data, camada, relatorio):
-        """Apende os dados ao arquivo existente ou cria um novo se não existir."""
+    def save_data_to_layer(self, data, camada, relatorio):
+        """Salva os dados na camada especificada do Google Drive."""
         try:
             folder_id = self.Id_camada[camada]
             file_name = f"{relatorio}.xlsx"
             file_id = self.get_file_id(file_name, folder_id)
 
-            # Se o arquivo já existir, baixa e apenda os dados
+            # Adiciona a timestamp de processamento
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            for row in data:
+                row.append(timestamp)
+
             if file_id:
                 self.download_existing_file(file_id, file_name)
-                existing_df = pd.read_excel(file_name, header=0)
+                existing_df = pd.read_excel(file_name, header=None)
                 new_df = pd.DataFrame(data)
                 updated_df = pd.concat([existing_df, new_df], ignore_index=True)
-                logging.info("Dados apensados ao arquivo existente.")
+                logging.info(f"Dados apendados à camada {camada}.")
             else:
                 updated_df = pd.DataFrame(data)
-                logging.info("Criando novo arquivo Excel.")
+                logging.info(f"Criando novo arquivo na camada {camada}.")
 
             # Salva o arquivo atualizado
-            updated_df.to_excel(file_name, index=False, header=True)
+            updated_df.to_excel(file_name, index=False, header=False)
 
             # Remove o arquivo antigo do Google Drive (se existir)
             if file_id:
@@ -142,13 +140,13 @@ class GoogleDriveManager:
             }
             media = MediaFileUpload(file_name, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
             uploaded_file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-            logging.info(f"Arquivo atualizado enviado para o Google Drive. ID: {uploaded_file.get('id')}")
+            logging.info(f"Arquivo enviado para {camada}. ID: {uploaded_file.get('id')}")
 
             # Remove o arquivo local após o upload
             os.remove(file_name)
 
         except Exception as e:
-            logging.error(f"Erro ao salvar o arquivo no Google Drive: {e}")
+            logging.error(f"Erro ao salvar o arquivo na camada {camada}: {e}")
             raise
 
 def setup_logging():
@@ -158,15 +156,38 @@ def setup_logging():
         format='%(asctime)s - %(levelname)s - %(message)s',
     )
 
+def processar_camadas_raw(auth, sheets_manager, drive_manager, relatorio):
+    """Processa os dados do relatório em todas as camadas."""
+    sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
+    data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
+
+    for camada in ['raw']:
+        drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
+
+def processar_camadas_refined(auth, sheets_manager, drive_manager, relatorio):
+    """Processa os dados do relatório em todas as camadas."""
+    sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
+    data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
+
+    for camada in ['refined']:
+        drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
+
+def processar_camadas_trusted(auth, sheets_manager, drive_manager, relatorio):
+    """Processa os dados do relatório em todas as camadas."""
+    sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
+    data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
+
+    for camada in ['trusted']:
+        drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
+
 if __name__ == "__main__":
     setup_logging()
 
     auth = GoogleAuthenticator()
     sheets_manager = GoogleSheetsManager(auth.sheets_client)
-    drive_manager = GoogleDriveManager(auth.drive_service, camada='trusted')
+    drive_manager = GoogleDriveManager(auth.drive_service)
 
     relatorio = 'autoavaliacao'  # Defina o relatório desejado
-    sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha correta
+    processar_camadas_raw(auth, sheets_manager, drive_manager, relatorio)
+    processar_camadas_refined(auth, sheets_manager, drive_manager, relatorio)
 
-    data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
-    drive_manager.save_data_to_excel_and_upload(data, camada='trusted', relatorio=relatorio)  # Salva e faz upload

@@ -27,7 +27,7 @@ drive_manager = GoogleDriveManager(auth.drive_service, camada)
 # Obter a planilha correspondente ao relatório
 sheet = sheets_manager.get_sheet(relatorio)
 
-# Ler dados da planilha
+# Ler dados da planilha correspondente ao relatorio
 data = sheets_manager.get_data(sheet)
 
 # Gerar um Excel e enviar para a pasta people_analytics/[camada] do Google Drive

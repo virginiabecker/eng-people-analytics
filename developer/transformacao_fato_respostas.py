@@ -2,8 +2,6 @@ from transformacao_autoavaliacao import GoogleDriveManager,DataExtractor
 import pandas as pd
 
 
-
-
 class TransformerFatoRespostas:
     def __init__(self,df_padronizado):
         self.df_padronizado =df_padronizado
