@@ -61,8 +61,9 @@ class DataExtractor:
 
 # Transformação de dados
 class DataTransformer:
-    def __init__(self, df_raw):
+    def __init__(self, df_raw,file_name):
         self.df_raw = df_raw
+        self.file_name = file_name
     
     def retirar_acento(self, frase):
         nova = frase.lower()
@@ -101,20 +102,31 @@ class DataTransformer:
     def validar_email(self):
         self.df_raw['emailRespondente'] = self.df_raw['emailRespondente'].apply(lambda x: x if self.verificar_email(x) == 'Pass' else None)
     
+    def adicionar_caderno_pergunta(self):
+        if file_name == 'autoavaliacao.xlsx':
+            self.df_raw['nmCadernoPergunta'] = 'Autoavaliação Pipoca Ágil (respostas)'
+
+    def clean_empty_rows(self):
+        df_copy = self.df_raw
+        df_copy = df_copy.drop_duplicates()
+        self.df_raw = df_copy
+            
     def transformar_dados(self):
         self.renomear_colunas_autoavaliacao()
         self.validar_email()
         self.df_raw['timestamp'] = self.df_raw['timestamp'].apply(self.padronizar_datastring)
-        return self.df_raw    
+        self.adicionar_caderno_pergunta()
+        self.clean_empty_rows()
+        return self.df_raw
 
 # Processo principal
 def processar_arquivo(folder_id_origem, folder_id_destino, file_name):
     drive_manager = GoogleDriveManager()
     extractor = DataExtractor(drive_manager, folder_id_origem, file_name)
     df = extractor.load_excelfile()
-    transformer = DataTransformer(df)
+    transformer = DataTransformer(df,file_name)
     df_transformado = transformer.transformar_dados()
-    file_path = f"{file_name}_processado.xlsx"
+    file_path = file_name.split('.')[0]+"_processado.xlsx" 
     df_transformado.to_excel(file_path, index=False)
     drive_manager.upload_file(folder_id_destino, file_path, file_path)
     print("Arquivo processado e salvo no Google Drive.")
@@ -122,7 +134,7 @@ def processar_arquivo(folder_id_origem, folder_id_destino, file_name):
 # IDs das pastas
 folder_id_origem = "1E6AEUGqRp3IJsWV4qAwMRJK_tMD7wDYT" #pasta people_analytics/raw/
 folder_id_destino = "1WJlq1C_uLq9J3Ta-lVAkQVv7AzblftsD" #pasta people_analytics/trusted/
-file_name = "autoavalicao_pipoca.xlsx"
+file_name = "autoavaliacao.xlsx"
 
 # Executar o processamento
 processar_arquivo(folder_id_origem, folder_id_destino, file_name)
