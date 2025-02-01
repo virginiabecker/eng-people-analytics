@@ -3,6 +3,10 @@
 
 # Ambiente  virtual a ser ignorado
 venv/
+env/
 
 #Ignorar as credenciais do sistema
 credentials/
+
+#arquivos de cache
+__pycache__/

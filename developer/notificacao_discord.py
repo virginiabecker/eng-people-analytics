@@ -1,56 +1,62 @@
-# IMPORTANDO AS BIBLIOTECAS NECESSARIAS:
 import requests
 from datetime import datetime
 
-# FUNÇÃO QUE ENVIA NOTIFICAÇÃO PARA O DISCORD
-
-# URL do webhook do Discord, Canal Observabilidade
-URL_WEBHOOK = "https://discord.com/api/webhooks/1333091809139621939/aMNr3JAmrpzklttIUStqdp8W2BNPU91GNRzHPaPe3NjBiqHs69vVqbyw34I_FY0Aaf01"
-
-def enviar_notificacao_discord(mensagem, status="info"):
+class DiscordNotifier:
     """
-    Envia uma notificação para o Discord usando um webhook.
+    Classe para enviar notificações ao Discord via webhook.
+    """    
+    def __init__(self, webhook_url):
+        """
+        Inicializa a classe com a URL do webhook do Discord.
 
-    Args:
-        mensagem (str): Texto da mensagem a ser exibida.
-        status (str): Status da mensagem: "info", "sucesso", "erro".
-    """
-    # Cores baseadas no status
-    cores = {
-        "info": 3447003,     # Azul
-        "sucesso": 3066993,  # Verde
-        "erro": 15158332     # Vermelho
-    }
+        Args:
+            webhook_url (str): URL do webhook do Discord.
+        """
+        self.webhook_url = webhook_url
 
-    # Timestamp atual no formato ISO8601
-    timestamp = datetime.now().isoformat()
+    def enviar_notificacao(self, mensagem, processo, status="info"):
+        """
+        Envia uma notificação para o Discord usando um webhook.
 
-    # Corpo da mensagem
-    conteudo = {
-        "username": "Bender",  # Nome do bot que aparece no Discord
-        "embeds": [
-            {
-                "title": f"ETL - {status.capitalize()}",
-                "description": mensagem,
-                "color": cores.get(status, 3447003),  # Azul é a cor padrão
-                "timestamp": timestamp,
-            }
-        ]
-    }
+        Args:
+            mensagem (str): Texto da mensagem a ser exibida.
+            status (str): Status da mensagem: "info", "sucesso", "erro".
+        """
+        # Cores baseadas no status
+        cores = {
+            "info": 3447003,     # Azul
+            "sucesso": 3066993,  # Verde
+            "erro": 15158332     # Vermelho
+        }
 
-    # Enviar requisição para o webhook
-    resposta = requests.post(URL_WEBHOOK, json=conteudo)
+        # Timestamp atual no formato ISO8601
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    # Verificar sucesso
-    if resposta.status_code == 204:
-        print("Notificação enviada com sucesso!")
-    else:
-        print(f"Erro ao enviar notificação: {resposta.status_code} - {resposta.text}")
+        # Corpo da mensagem
+        conteudo = {
+            "username": "Bender",  # Nome do bot que aparece no Discord
+            "embeds": [
+                {
+                    "title": f"Processo: {processo.capitalize()}",
+                    "description": mensagem,
+                    "color": cores.get(status, 3447003),  # Azul é a cor padrão
+                    "timestamp": timestamp,
+                }
+            ]
+        }
 
-# Exemplos de chamadas da função
-enviar_notificacao_discord("O processo ETL foi iniciado por Larissa.", status="info")
+        # Enviar requisição para o webhook
+        resposta = requests.post(self.webhook_url, json=conteudo)
 
-# Exemplos de chamadas da função
-# enviar_notificacao_discord("O processo ETL foi iniciado.", status="info")
-# enviar_notificacao_discord("A transformação de dados foi concluída.", status="sucesso")
-# enviar_notificacao_discord("Erro ao carregar os dados no banco de dados.", status="erro")
+        # Verificar sucesso
+        if resposta.status_code == 204:
+            print("Notificação enviada com sucesso!")
+        else:
+            print(f"Erro ao enviar notificação: {resposta.status_code} - {resposta.text}")
+
+# Exemplo de uso
+if __name__ == "__main__":
+    URL_WEBHOOK = "https://discord.com/api/webhooks/1333091809139621939/aMNr3JAmrpzklttIUStqdp8W2BNPU91GNRzHPaPe3NjBiqHs69vVqbyw34I_FY0Aaf01"
+
+    notifier = DiscordNotifier(URL_WEBHOOK)
+    notifier.enviar_notificacao("O processo de ETL foi iniciado.", processo='XPTO', status="info")
