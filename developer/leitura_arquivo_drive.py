@@ -11,12 +11,7 @@ class GoogleAuthenticator:
     """Gerencia a autenticação do Google Sheets e Google Drive."""
 
     def __init__(self):
-        """
-        Inicializa a autenticação com as credenciais fornecidas.
-
-        Args:
-            credentials_path (str): Caminho do arquivo JSON de credenciais.
-        """
+        """Inicializa a autenticação com as credenciais fornecidas."""
         self.sheets_client = None
         self.drive_service = None
         self.authenticate()
@@ -28,9 +23,7 @@ class GoogleAuthenticator:
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/drive'
             ]
-            # credencial para acessar o Google Drive
             credentials_path = 'credentials/people-analytics-pipoca-agil-google-drive.json'
-
             credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
 
             # Cliente para Google Sheets
@@ -48,12 +41,7 @@ class GoogleSheetsManager:
     """Gerencia operações com o Google Sheets."""
 
     def __init__(self, client):
-        """
-        Inicializa o gerenciador do Google Sheets.
-
-        Args:
-            client (gspread.Client): Cliente autenticado do Google Sheets.
-        """
+        """Inicializa o gerenciador do Google Sheets."""
         self.client = client
         self.sheet_ids = {
             'autoavaliacao': '1NmhI61q2bZJBWr3Vb3C_Y6siGUOC1rk66FOXu3gUN00',
@@ -91,40 +79,72 @@ class GoogleSheetsManager:
 class GoogleDriveManager:
     """Gerencia operações de upload de arquivos no Google Drive."""
 
-    def __init__(self, drive_service, folder_id):
-        """
-        Inicializa o gerenciador do Google Drive.
-
-        Args:
-            drive_service: Cliente autenticado do Google Drive.
-            folder_id (str): ID da pasta no Google Drive onde os arquivos serão armazenados.
-        """
+    def __init__(self, drive_service, camada):
+        """Inicializa o gerenciador do Google Drive."""
         self.drive_service = drive_service
-        self.folder_id = folder_id
+        self.Id_camada = {
+            'raw': '1E6AEUGqRp3IJsWV4qAwMRJK_tMD7wDYT',
+            'refined': '1tc3HQnG507HfyLvHqtZasb-La8GD98P0',
+            'trusted': '1WJlq1C_uLq9J3Ta-lVAkQVv7AzblftsD'
+        }
 
-    def save_data_to_excel_and_upload(self, data):
-        """Salva os dados em um arquivo Excel local e faz upload para o Google Drive."""
+    def get_file_id(self, file_name, folder_id):
+        """Busca o arquivo no Google Drive e retorna seu ID, se existir."""
         try:
-            timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-            file_name = f"autoavaliacao_pipoca_{timestamp}.xlsx"
+            query = f"name='{file_name}' and '{folder_id}' in parents and trashed=false"
+            results = self.drive_service.files().list(q=query, fields="files(id)").execute()
+            files = results.get('files', [])
+            return files[0]['id'] if files else None
+        except Exception as e:
+            logging.error(f"Erro ao buscar arquivo no Google Drive: {e}")
+            return None
 
-            # Criar DataFrame e salvar como arquivo Excel
-            df = pd.DataFrame(data)
-            df.to_excel(file_name, index=False, header=False)
+    def download_existing_file(self, file_id, file_name):
+        """Faz o download do arquivo existente no Google Drive."""
+        try:
+            request = self.drive_service.files().get_media(fileId=file_id)
+            with open(file_name, "wb") as f:
+                f.write(request.execute())
+            logging.info(f"Arquivo {file_name} baixado com sucesso.")
+        except Exception as e:
+            logging.error(f"Erro ao baixar o arquivo: {e}")
 
-            logging.info("Arquivo Excel gerado com sucesso.")
+    def save_data_to_excel_and_upload(self, data, camada, relatorio):
+        """Apende os dados ao arquivo existente ou cria um novo se não existir."""
+        try:
+            folder_id = self.Id_camada[camada]
+            file_name = f"{relatorio}.xlsx"
+            file_id = self.get_file_id(file_name, folder_id)
 
-            # Upload para o Google Drive
+            # Se o arquivo já existir, baixa e apenda os dados
+            if file_id:
+                self.download_existing_file(file_id, file_name)
+                existing_df = pd.read_excel(file_name, header=0)
+                new_df = pd.DataFrame(data)
+                updated_df = pd.concat([existing_df, new_df], ignore_index=True)
+                logging.info("Dados apensados ao arquivo existente.")
+            else:
+                updated_df = pd.DataFrame(data)
+                logging.info("Criando novo arquivo Excel.")
+
+            # Salva o arquivo atualizado
+            updated_df.to_excel(file_name, index=False, header=True)
+
+            # Remove o arquivo antigo do Google Drive (se existir)
+            if file_id:
+                self.drive_service.files().delete(fileId=file_id).execute()
+                logging.info(f"Arquivo antigo {file_name} removido do Google Drive.")
+
+            # Faz upload do novo arquivo
             file_metadata = {
                 'name': file_name,
-                'parents': [self.folder_id]
+                'parents': [folder_id]
             }
             media = MediaFileUpload(file_name, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            uploaded_file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+            logging.info(f"Arquivo atualizado enviado para o Google Drive. ID: {uploaded_file.get('id')}")
 
-            file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-            logging.info(f"Arquivo enviado para o Google Drive com sucesso. ID: {file.get('id')}")
-
-            # Remover arquivo local após o upload
+            # Remove o arquivo local após o upload
             os.remove(file_name)
 
         except Exception as e:
@@ -141,10 +161,12 @@ def setup_logging():
 if __name__ == "__main__":
     setup_logging()
 
-    folder_id = '1E6AEUGqRp3IJsWV4qAwMRJK_tMD7wDYT' #Pasta people_analytics/RAW
     auth = GoogleAuthenticator()
-    sheets_manager = GoogleSheetsManager(auth.sheets_client, sheet_id)
-    drive_manager = GoogleDriveManager(auth.drive_service, folder_id)
+    sheets_manager = GoogleSheetsManager(auth.sheets_client)
+    drive_manager = GoogleDriveManager(auth.drive_service, camada='trusted')
 
-    data = sheets_manager.get_data()
-    drive_manager.save_data_to_excel_and_upload(data)
+    relatorio = 'autoavaliacao'  # Defina o relatório desejado
+    sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha correta
+
+    data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
+    drive_manager.save_data_to_excel_and_upload(data, camada='trusted', relatorio=relatorio)  # Salva e faz upload

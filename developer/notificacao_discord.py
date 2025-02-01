@@ -5,14 +5,14 @@ class DiscordNotifier:
     """
     Classe para enviar notificações ao Discord via webhook.
     """    
-    def __init__(self, webhook_url):
+    def __init__(self):
         """
         Inicializa a classe com a URL do webhook do Discord.
 
         Args:
             webhook_url (str): URL do webhook do Discord.
         """
-        self.webhook_url = webhook_url
+        self.webhook_url = "https://discord.com/api/webhooks/1333091809139621939/aMNr3JAmrpzklttIUStqdp8W2BNPU91GNRzHPaPe3NjBiqHs69vVqbyw34I_FY0Aaf01"
 
     def enviar_notificacao(self, mensagem, processo, status="info"):
         """
@@ -56,7 +56,6 @@ class DiscordNotifier:
 
 # Exemplo de uso
 if __name__ == "__main__":
-    URL_WEBHOOK = "https://discord.com/api/webhooks/1333091809139621939/aMNr3JAmrpzklttIUStqdp8W2BNPU91GNRzHPaPe3NjBiqHs69vVqbyw34I_FY0Aaf01"
 
-    notifier = DiscordNotifier(URL_WEBHOOK)
+    notifier = DiscordNotifier()
     notifier.enviar_notificacao("O processo de ETL foi iniciado.", processo='XPTO', status="info")
