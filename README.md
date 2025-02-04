@@ -32,6 +32,8 @@ O objetivo deste projeto é construir um pipeline de dados low cost e que entreg
 │   └── utils/                                      # Scripts utilitários
 ├── developer/                                      # Código-fonte desenvolvimento
 │   ├── script.ipynb                                # Arquivo Jupyter Notebook para desenvolvimento
+|── docs/                                           # Documentações de referência
+|── output/                                         # arquivos de output do processamento de dados
 ├── README.md                                       # Documentação do projeto
 ├── png/                                            # Imagens do projeto
 │   ├── arquitetura_dados_people_analytics.png      # Arquivo png com imagem da arquitetura de dados
