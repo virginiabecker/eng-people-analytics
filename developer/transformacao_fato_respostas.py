@@ -1,10 +1,13 @@
+from leitura_arquivo_drive import *
 from transformacao_autoavaliacao import GoogleDriveManager,DataExtractor
 import pandas as pd
 
-
 class TransformerFatoRespostas:
-    def __init__(self,df_padronizado):
+
+    def __init__(self, df_padronizado):
         self.df_padronizado =df_padronizado
+        #self.df_fato_resposta = self.criar_fato_respostas()
+
     def criar_fato_respostas(self):
         fato_resposta = {'timestamp': [],
                              'dsEmailRespondente': [],
@@ -18,6 +21,7 @@ class TransformerFatoRespostas:
                               'dsDataType':[]}
         df_fato_resposta = pd.DataFrame(fato_resposta)
         return df_fato_resposta
+    
     #Função para adicionar as informações do
     def add_info(self,df_fato_resposta):
         df_fato_resposta['timestamp'] = self.df_padronizado['timestamp']
@@ -33,6 +37,14 @@ class TransformerFatoRespostas:
         
              
     def criar_fato_resposta(self)
+        
+
+    
+    def salvar_fato_resposta(self):
+        data = self.df_fato_resposta.values.tolist()
+        camada = 'refined'
+        relatorio = 'fato_respostas'
+        GoogleDriveManager.save_data_to_layer(data, camada, relatorio)
 
 folder_id_destino = '1tc3HQnG507HfyLvHqtZasb-La8GD98P0' #pasta people_analytics/refined/
 folder_id_origem = "1WJlq1C_uLq9J3Ta-lVAkQVv7AzblftsD" #pasta people_analytics/trusted/ 

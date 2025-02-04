@@ -149,14 +149,7 @@ class GoogleDriveManager:
             logging.error(f"Erro ao salvar o arquivo na camada {camada}: {e}")
             raise
 
-def setup_logging():
-    """Configura o logging para registrar informações e erros."""
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-    )
-
-def processar_camadas_raw(auth, sheets_manager, drive_manager, relatorio):
+def processar_camadas_raw(sheets_manager, drive_manager, relatorio):
     """Processa os dados do relatório em todas as camadas."""
     sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
     data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
@@ -164,7 +157,7 @@ def processar_camadas_raw(auth, sheets_manager, drive_manager, relatorio):
     for camada in ['raw']:
         drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
 
-def processar_camadas_refined(auth, sheets_manager, drive_manager, relatorio):
+def processar_camadas_refined(sheets_manager, drive_manager, relatorio):
     """Processa os dados do relatório em todas as camadas."""
     sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
     data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
@@ -172,13 +165,20 @@ def processar_camadas_refined(auth, sheets_manager, drive_manager, relatorio):
     for camada in ['refined']:
         drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
 
-def processar_camadas_trusted(auth, sheets_manager, drive_manager, relatorio):
+def processar_camadas_trusted(sheets_manager, drive_manager, relatorio):
     """Processa os dados do relatório em todas as camadas."""
     sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
     data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
 
     for camada in ['trusted']:
         drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
+
+def setup_logging():
+    """Configura o logging para registrar informações e erros."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(levelname)s - %(message)s',
+    )
 
 if __name__ == "__main__":
     setup_logging()
@@ -188,6 +188,7 @@ if __name__ == "__main__":
     drive_manager = GoogleDriveManager(auth.drive_service)
 
     relatorio = 'autoavaliacao'  # Defina o relatório desejado
-    processar_camadas_raw(auth, sheets_manager, drive_manager, relatorio)
-    processar_camadas_refined(auth, sheets_manager, drive_manager, relatorio)
+    processar_camadas_raw(sheets_manager, drive_manager, relatorio)
+    processar_camadas_trusted(sheets_manager, drive_manager, relatorio)
 
+    
