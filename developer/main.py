@@ -2,7 +2,7 @@
 from notificacao_discord import DiscordNotifier
 from datetime import datetime
 from leitura_arquivo_drive import * 
-from transformacao_autoavaliacao import *
+from transformacao_autoavaliacao_fato_respostas import *
 
 # Defina qual relatório você deseja integrar os dados
 relatorio = 'avaliacao_coletiva'  # Opções: autoavaliacao, avaliacao_coletiva, avaliacao_projeto
