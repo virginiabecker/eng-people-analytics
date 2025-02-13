@@ -110,15 +110,10 @@ class GoogleDriveManager:
             file_name = f"{relatorio}.xlsx"
             file_id = self.get_file_id(file_name, folder_id)
 
-            # Adiciona a timestamp de processamento
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            for row in data:
-                row.append(timestamp)
-
             if file_id:
                 self.download_existing_file(file_id, file_name)
-                existing_df = pd.read_excel(file_name, header=None)
-                new_df = pd.DataFrame(data)
+                existing_df = pd.read_excel(file_name)
+                new_df = data.copy()
                 updated_df = pd.concat([existing_df, new_df], ignore_index=True)
                 logging.info(f"Dados apendados à camada {camada}.")
             else:
