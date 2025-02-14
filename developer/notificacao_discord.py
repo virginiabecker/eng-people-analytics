@@ -39,7 +39,7 @@ class DiscordNotifier:
                 {
                     "title": f"Processo: {processo.capitalize()}",
                     "description": mensagem,
-                    "color": cores.get(status, 3447003),  # Azul é a cor padrão
+                    "color": 15158332 if status == "falha" else cores.get(status, 3447003),  # Vermelho se falha, azul padrão
                     "timestamp": timestamp,
                 }
             ]
@@ -58,4 +58,4 @@ class DiscordNotifier:
 if __name__ == "__main__":
 
     notifier = DiscordNotifier()
-    notifier.enviar_notificacao("O processo de ETL foi iniciado.", processo='XPTO', status="info")
+    notifier.enviar_notificacao("O processo de ETL foi iniciado.", processo='XPTO', status="falha")
