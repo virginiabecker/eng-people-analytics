@@ -49,10 +49,7 @@ class DataTransformer:
     
     def validar_email(self):
         self.df_raw['emailRespondente'] = self.df_raw['emailRespondente'].apply(lambda x: x if self.verificar_email(x) == 'Pass' else None)
-    
-    def adicionar_caderno_pergunta(self):
-        if self.file_name == 'autoavaliacao.xlsx':
-            self.df_raw['nmCadernoPergunta'] = 'Autoavaliação Pipoca Ágil (respostas)'
+           
 
     def clean_empty_rows(self):
         df_copy = self.df_raw
@@ -69,8 +66,19 @@ class DataTransformer:
 
 # Para transformar o arquivo autoavaliacao da pasta trusted no formato modelo_fato_respostas
 class TransformerFatoRespostas:
-    def __init__(self, df_trusted):
+    def __init__(self, df_trusted,filename):
         self.df_trusted = df_trusted
+        self.filename = filename
+
+    def adicionar_caderno_resposta(self):
+        if self.filename == 'autoavaliacao.xlsx':
+            return 'Autoavaliação Pipoca Ágil (respostas)'
+        elif self.filename == 'avaliacao_individual.xlsx':
+            return 'Avaliação Individual Pipoca Ágil (respostas)'
+        elif self.filename == 'avaliacao_coletiva.xlsx':
+            return 'Avaliação coletiva do time (respostas)'
+        elif self.filename == 'avaliacao_projeto.xlsx':
+            return 'Avaliação do projeto (respostas)'
 
     def transformar_trusted_fato_respostas(self):
         df_copy = self.df_trusted
@@ -87,6 +95,7 @@ class TransformerFatoRespostas:
 #coluna com as perguntas
         perguntas = df_copy.keys().tolist()[5:22]
         all_df = []
+        caderno_respostas = self.adicionar_caderno_resposta()
         for i_entrevistado in range(df_copy.shape[0]):
             row = df_copy.iloc[i_entrevistado].T
             row = row.apply(lambda x: int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x) #transformar todos os campos float para integer
@@ -95,7 +104,7 @@ class TransformerFatoRespostas:
                 'dsNomeRespondente': row.iloc[2], #campo do entrevistado
                 'dsQualFuncaoDesempenha':row.iloc[3], #campo da função
                 'dsEquipeParticipante':row.iloc[4], #campo da equipe
-                'nmCadernoPergunta': 'Autoavaliação Pipoca Ágil (respostas)', #modificar para cada formulário
+                'nmCadernoPergunta': caderno_respostas, #modificar para cada formulário
                 'dsTituloPergunta': perguntas, #lista com as perguntas
                 'dsTipoPergunta':tipo_perguntas, #lista com o tipo das perguntas
                 'dsResposta':row.iloc[5:22], #lista com as respotas
@@ -140,7 +149,7 @@ if __name__ == "__main__":
     drive_manager = GoogleDriveManager(drive_service)
     processar_arquivo(drive_manager, file_name, relatorio_raw)
     df_trusted = pd.read_excel(f"{relatorio}_processado.xlsx")
-    transformer = TransformerFatoRespostas(df_trusted)
+    transformer = TransformerFatoRespostas(df_trusted,file_name)
     processar_fato_respostas(drive_manager, transformer, relatorio_final)
 
 
