@@ -121,7 +121,7 @@ class GoogleDriveManager:
                 logging.info(f"Criando novo arquivo na camada {camada}.")
 
             # Salva o arquivo atualizado
-            updated_df.to_excel(file_name, index=False, header=False)
+            updated_df.to_excel(file_name, index=False, header=True)
 
             # Remove o arquivo antigo do Google Drive (se existir)
             if file_id:
