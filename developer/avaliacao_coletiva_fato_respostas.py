@@ -92,6 +92,7 @@ class TransformerFatoRespostas:
                 'dsNomeRespondente': row.iloc[2], #campo do entrevistado
                 'dsQualFuncaoDesempenha':row.iloc[3], #campo da função
                 'dsEquipeParticipante':row.iloc[4], #campo da equipe
+                'nmCadernoPergunta': 'Avaliação coletiva do time (respostas)', #modificar para cada formulário
                 'dsTituloPergunta': perguntas, #lista com as perguntas
                 'dsTipoPergunta':tipo_perguntas, #lista com o tipo das perguntas
                 'dsResposta':row.iloc[5:22], #lista com as respotas
