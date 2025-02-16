@@ -7,7 +7,7 @@ from datetime import datetime
 from leitura_arquivo_drive import *
 
 # Caminho para a credencial da conta de serviço
-CREDENTIALS_PATH = 'credentials/people-analytics-pipoca-agil-google-drive.json'
+CREDENTIALS_PATH = r'C:\Users\Vitoria Loraine\OneDrive - dsm-firmenich\Área de Trabalho\pipoca\eng-people-analytics\credentials\people-analytics-pipoca-agil-google-drive.json.json'
 
 # Transformação de dados
 class DataTransformer:
@@ -60,15 +60,16 @@ class DataTransformer:
         self.renomear_colunas_autoavaliacao()
         self.validar_email()
         self.df_raw['timestamp'] = self.df_raw['timestamp'].apply(self.padronizar_datastring)
-        self.adicionar_caderno_pergunta()
+        # self.adicionar_caderno_pergunta()
         self.clean_empty_rows()
         return self.df_raw
 
 # Para transformar o arquivo autoavaliacao da pasta trusted no formato modelo_fato_respostas
 class TransformerFatoRespostas:
-    def __init__(self, df_trusted):
+    def __init__(self, df_trusted, file_name):
         self.df_trusted = df_trusted
-
+        self.file_name = file_name
+        
     def transformar_trusted_fato_respostas(self):
         df_copy = self.df_trusted
 #criaremos colunas de informações que são comuns a todos os relatórios
