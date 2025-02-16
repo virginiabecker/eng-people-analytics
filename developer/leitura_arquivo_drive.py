@@ -22,7 +22,7 @@ class GoogleAuthenticator:
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/drive'
             ]
-            credentials_path = 'credentials/people-analytics-pipoca-agil-google-drive.json'
+            credentials_path = r'C:\Users\Vitoria Loraine\OneDrive - dsm-firmenich\Área de Trabalho\pipoca\eng-people-analytics\credentials\people-analytics-pipoca-agil-google-drive.json.json'
             credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
 
             self.sheets_client = gspread.authorize(credentials)
@@ -138,6 +138,7 @@ class GoogleDriveManager:
             logging.info(f"Arquivo enviado para {camada}. ID: {uploaded_file.get('id')}")
 
             # Remove o arquivo local após o upload
+            media = None
             os.remove(file_name)
 
         except Exception as e:
