@@ -145,7 +145,7 @@ class GoogleDriveManager:
             logging.error(f"Erro ao salvar o arquivo na camada {camada}: {e}")
             raise
 
-def processar_camadas_raw(sheets_manager, drive_manager, relatorio):
+def processar_camada_raw(sheets_manager, drive_manager, relatorio):
     """Processa os dados do relatório em todas as camadas."""
     sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
     data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
@@ -153,7 +153,7 @@ def processar_camadas_raw(sheets_manager, drive_manager, relatorio):
     for camada in ['raw']:
         drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
 
-def processar_camadas_refined(sheets_manager, drive_manager, relatorio):
+def processar_camada_refined(sheets_manager, drive_manager, relatorio):
     """Processa os dados do relatório em todas as camadas."""
     sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
     data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
@@ -161,7 +161,7 @@ def processar_camadas_refined(sheets_manager, drive_manager, relatorio):
     for camada in ['refined']:
         drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
 
-def processar_camadas_trusted(sheets_manager, drive_manager, relatorio):
+def processar_camada_trusted(sheets_manager, drive_manager, relatorio):
     """Processa os dados do relatório em todas as camadas."""
     sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
     data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     sheets_manager = GoogleSheetsManager(auth.sheets_client)
     drive_manager = GoogleDriveManager(auth.drive_service)
     relatorio = 'autoavaliacao'  # Defina o relatório desejado
-    processar_camadas_raw(sheets_manager, drive_manager, relatorio)
-    processar_camadas_trusted(sheets_manager, drive_manager, relatorio)
+    processar_camada_raw(sheets_manager, drive_manager, relatorio)
+    processar_camada_trusted(sheets_manager, drive_manager, relatorio)
 
     
