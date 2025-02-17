@@ -60,15 +60,16 @@ class DataTransformer:
         self.renomear_colunas_autoavaliacao()
         self.validar_email()
         self.df_raw['timestamp'] = self.df_raw['timestamp'].apply(self.padronizar_datastring)
-        self.adicionar_caderno_pergunta()
+        # self.adicionar_caderno_pergunta()
         self.clean_empty_rows()
         return self.df_raw
 
 # Para transformar o arquivo autoavaliacao da pasta trusted no formato modelo_fato_respostas
 class TransformerFatoRespostas:
-    def __init__(self, df_trusted):
+    def __init__(self, df_trusted, file_name):
         self.df_trusted = df_trusted
-
+        self.file_name = file_name
+        
     def transformar_trusted_fato_respostas(self):
         df_copy = self.df_trusted
 #criaremos colunas de informações que são comuns a todos os relatórios

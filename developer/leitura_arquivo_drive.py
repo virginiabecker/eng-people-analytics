@@ -138,6 +138,7 @@ class GoogleDriveManager:
             logging.info(f"Arquivo enviado para {camada}. ID: {uploaded_file.get('id')}")
 
             # Remove o arquivo local após o upload
+            media = None
             os.remove(file_name)
 
         except Exception as e:
@@ -181,7 +182,6 @@ if __name__ == "__main__":
     auth = GoogleAuthenticator()
     sheets_manager = GoogleSheetsManager(auth.sheets_client)
     drive_manager = GoogleDriveManager(auth.drive_service)
-
     relatorio = 'autoavaliacao'  # Defina o relatório desejado
     processar_camada_raw(sheets_manager, drive_manager, relatorio)
     processar_camada_trusted(sheets_manager, drive_manager, relatorio)

@@ -27,7 +27,7 @@ try:
     
     # Carregar os dados transformados
     df_trusted = pd.read_excel(f"{relatorio}_processado.xlsx")
-    transformer = TransformerFatoRespostas(df_trusted)
+    transformer = TransformerFatoRespostas(df_trusted, file_name)
     
     # Transformação do trusted para refined (modelo fato_respostas)
     processar_fato_respostas(drive_manager, transformer, relatorio_final)
@@ -36,3 +36,4 @@ try:
 
 except Exception as e:
     notifier.enviar_notificacao(f"{timestamp} - Erro durante o processo de transformação: {str(e)}", processo=relatorio, status="falha")
+    raise e
