@@ -22,7 +22,7 @@ class GoogleAuthenticator:
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/drive'
             ]
-            credentials_path = r'C:\Users\Vitoria Loraine\OneDrive - dsm-firmenich\Área de Trabalho\pipoca\eng-people-analytics\credentials\people-analytics-pipoca-agil-google-drive.json.json'
+            credentials_path = 'credentials/people-analytics-pipoca-agil-google-drive.json'
             credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
 
             self.sheets_client = gspread.authorize(credentials)
@@ -182,7 +182,6 @@ if __name__ == "__main__":
     auth = GoogleAuthenticator()
     sheets_manager = GoogleSheetsManager(auth.sheets_client)
     drive_manager = GoogleDriveManager(auth.drive_service)
-
     relatorio = 'autoavaliacao'  # Defina o relatório desejado
     processar_camadas_raw(sheets_manager, drive_manager, relatorio)
     processar_camadas_trusted(sheets_manager, drive_manager, relatorio)

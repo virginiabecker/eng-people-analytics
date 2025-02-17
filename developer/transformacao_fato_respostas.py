@@ -64,7 +64,7 @@ if __name__ == "__main__":
     auth = GoogleAuthenticator()
     drive_manager = GoogleDriveManager(auth.drive_service)
     transformer = TransformerFatoRespostas(df_trusted)
-    relatorio = 'modelo_fato_respostas.xlsx'  # Defina o relatório desejado
+    relatorio = 'fato_respostas.xlsx'  # Defina o relatório desejado
     processar_fato_respostas(drive_manager,transformer,relatorio)
 
        

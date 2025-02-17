@@ -7,7 +7,7 @@ from datetime import datetime
 from leitura_arquivo_drive import *
 
 # Caminho para a credencial da conta de serviço
-CREDENTIALS_PATH = r'C:\Users\Vitoria Loraine\OneDrive - dsm-firmenich\Área de Trabalho\pipoca\eng-people-analytics\credentials\people-analytics-pipoca-agil-google-drive.json.json'
+CREDENTIALS_PATH = 'credentials/people-analytics-pipoca-agil-google-drive.json'
 # Transformação de dados
 class DataTransformer:
     def __init__(self, df_raw, file_name):
@@ -91,7 +91,7 @@ class TransformerFatoRespostas:
                 'dsNomeRespondente': row.iloc[2], #campo do entrevistado
                 'dsQualFuncaoDesempenha':row.iloc[3], #campo da função
                 'dsEquipeParticipante':row.iloc[4], #campo da equipe
-                'nmCadernoPergunta': 'Avaliação coletiva do time (respostas)', #modificar para cada formulário
+                'nmCadernoPergunta': 'Avaliação individual do time (respostas)', #modificar para cada formulário
                 'dsTituloPergunta': perguntas, #lista com as perguntas
                 'dsTipoPergunta':tipo_perguntas, #lista com o tipo das perguntas
                 'dsResposta':row.iloc[5:22], #lista com as respotas
@@ -127,9 +127,9 @@ def processar_fato_respostas(drive_manager, transformer, relatorio):
 # Executar o processamento
 if __name__ == "__main__":
     setup_logging()
-    relatorio_raw = "autoavaliacao.xlsx"
-    file_name = "autoavaliacao.xlsx"
-    relatorio = "autoavaliacao"
+    relatorio_raw = "avaliacao_individual.xlsx"
+    file_name = "avaliacao_individual.xlsx"
+    relatorio = "avaliacao_individual"
     relatorio_final = 'fato_respostas'
     auth = GoogleAuthenticator()
     drive_service = auth.drive_service

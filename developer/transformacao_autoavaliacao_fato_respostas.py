@@ -7,7 +7,7 @@ from datetime import datetime
 from leitura_arquivo_drive import *
 
 # Caminho para a credencial da conta de serviço
-CREDENTIALS_PATH = r'C:\Users\Vitoria Loraine\OneDrive - dsm-firmenich\Área de Trabalho\pipoca\eng-people-analytics\credentials\people-analytics-pipoca-agil-google-drive.json.json'
+CREDENTIALS_PATH = 'credentials/people-analytics-pipoca-agil-google-drive.json'
 
 # Transformação de dados
 class DataTransformer:
@@ -94,7 +94,6 @@ class TransformerFatoRespostas:
                 'dsQualFuncaoDesempenha':row.iloc[3], #campo da função
                 'dsEquipeParticipante':row.iloc[4], #campo da equipe
                 'nmCadernoPergunta': 'Autoavaliação Pipoca Ágil (respostas)', #modificar para cada formulário
-                'nmCadernoPergunta': 'Avaliação coletiva do time (respostas)', #modificar para cada formulário
                 'dsTituloPergunta': perguntas, #lista com as perguntas
                 'dsTipoPergunta':tipo_perguntas, #lista com o tipo das perguntas
                 'dsResposta':row.iloc[5:22], #lista com as respotas
