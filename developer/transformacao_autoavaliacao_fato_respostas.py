@@ -1,7 +1,6 @@
 import pandas as pd
 import re
 from dateutil.parser import parse
-import io
 import numpy as np
 from datetime import datetime
 from leitura_arquivo_drive import *
@@ -60,7 +59,6 @@ class DataTransformer:
         self.renomear_colunas_autoavaliacao()
         self.validar_email()
         self.df_raw['timestamp'] = self.df_raw['timestamp'].apply(self.padronizar_datastring)
-        # self.adicionar_caderno_pergunta()
         self.clean_empty_rows()
         return self.df_raw
 
@@ -71,35 +69,35 @@ class TransformerFatoRespostas:
         self.file_name = file_name
         
     def transformar_trusted_fato_respostas(self):
-        df_copy = self.df_trusted
-#criaremos colunas de informações que são comuns a todos os relatórios
-        #coluna com a descrição do tipo de pergunta
-        tipo_perguntas = ['Quantitativa de 0 a 10','Quantitativa de 0 a 10','Quantitativa de 0 a 10','Quantitativa de 0 a 10',
-                  'Quantitativa de 0 a 10','Quantitativa de 0 a 10','Quantitativa de 0 a 10,','Quantitativa de 0 a 10',
-'sim/nao','Quantitativa de 0 a 10','Quantitativa de 0 a 10','Quantitativa de 0 a 10',
-                  'Quantitativa de 0 a 10','Quantitativa de 0 a 10','Quantitativa de 0 a 10','Quantitativa de 0 a 10',
-'Descritiva, texto de opinião']
-#coluna com o tipo de dados das respostas
-        tipo_repostas = ['int','int','int','int','int','int','int','int','boolean','int','int','int','int','int','int','int',
-'str']
-#coluna com as perguntas
-        perguntas = df_copy.keys().tolist()[5:22]
+        df_copy = pd.DataFrame(self.df_trusted)
+        # criaremos colunas de informações que são comuns a todos os relatórios
+        # coluna com a descrição do tipo de pergunta
+        tipo_perguntas = ['Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
+                          'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
+                          'sim/nao', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
+                          'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
+                          'Descritiva, texto de opinião']
+        # coluna com o tipo de dados das respostas
+        tipo_repostas = ['int', 'int', 'int', 'int', 'int', 'int', 'int', 'int', 'boolean', 'int', 'int', 'int', 'int', 'int', 'int', 'int',
+                         'str']
+        # coluna com as perguntas
+        perguntas = df_copy.columns.tolist()[5:22]
         all_df = []
         for i_entrevistado in range(df_copy.shape[0]):
             row = df_copy.iloc[i_entrevistado].T
-            row = row.apply(lambda x: int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x) #transformar todos os campos float para integer
+            row = row.apply(lambda x: int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x)  # transformar todos os campos float para integer
             fato_resposta = {'timestamp': "Placeholder",
-                'dsEmailRespondente': row.iloc[1], #campo do email
-                'dsNomeRespondente': row.iloc[2], #campo do entrevistado
-                'dsQualFuncaoDesempenha':row.iloc[3], #campo da função
-                'dsEquipeParticipante':row.iloc[4], #campo da equipe
-                'nmCadernoPergunta': 'Autoavaliação Pipoca Ágil (respostas)', #modificar para cada formulário
-                'dsTituloPergunta': perguntas, #lista com as perguntas
-                'dsTipoPergunta':tipo_perguntas, #lista com o tipo das perguntas
-                'dsResposta':row.iloc[5:22], #lista com as respotas
-                'dsDataType':tipo_repostas} #lista com os tipos das respostas
-            df_fato_resposta = pd.DataFrame(fato_resposta).reset_index(drop=True) #criar um dataframe do dicionário fato_reposta
-            all_df.append(df_fato_resposta) #unir todos os dataframes en uma lista
+                             'dsEmailRespondente': row.iloc[1],  # campo do email
+                             'dsNomeRespondente': row.iloc[2],  # campo do entrevistado
+                             'dsQualFuncaoDesempenha': row.iloc[3],  # campo da função
+                             'dsEquipeParticipante': row.iloc[4],  # campo da equipe
+                             'nmCadernoPergunta': 'Autoavaliação (respostas)',  # modificar para cada formulário
+                             'dsTituloPergunta': perguntas,  # lista com as perguntas
+                             'dsTipoPergunta': tipo_perguntas,  # lista com o tipo das perguntas
+                             'dsResposta': row.iloc[5:22],  # lista com as respostas
+                             'dsDataType': tipo_repostas}  # lista com os tipos das respostas
+            df_fato_resposta = pd.DataFrame(fato_resposta).reset_index(drop=True)  # criar um dataframe do dicionário fato_resposta
+            all_df.append(df_fato_resposta)  # unir todos os dataframes em uma lista
         df_new = pd.concat(all_df)
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         df_new['timestamp'] = timestamp
@@ -121,10 +119,10 @@ def processar_arquivo(drive_manager, relatorio_raw, relatorio):
     df_transformado.to_excel(file_to_save)
 
 # Processo para transformar trusted em refined, no modelo da fato_respostas
-def processar_fato_respostas(drive_manager, transformer, relatorio):
+def processar_fato_respostas(drive_manager, transformer, relatorio_final):
     data = transformer.transformar_trusted_fato_respostas()
     for camada in ['refined']:
-        drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
+        drive_manager.save_data_to_layer(data.copy(), camada, relatorio_final)
 
 # Executar o processamento
 if __name__ == "__main__":

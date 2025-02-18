@@ -113,7 +113,7 @@ class GoogleDriveManager:
             if file_id:
                 self.download_existing_file(file_id, file_name)
                 existing_df = pd.read_excel(file_name)
-                new_df = data.copy()
+                new_df = pd.DataFrame(data.copy())
                 updated_df = pd.concat([existing_df, new_df], ignore_index=True)
                 logging.info(f"Dados apendados à camada {camada}.")
             else:
@@ -153,21 +153,16 @@ def processar_camada_raw(sheets_manager, drive_manager, relatorio):
     for camada in ['raw']:
         drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
 
-def processar_camada_refined(sheets_manager, drive_manager, relatorio):
-    """Processa os dados do relatório em todas as camadas."""
-    sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
-    data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
-
-    for camada in ['refined']:
-        drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
-
 def processar_camada_trusted(sheets_manager, drive_manager, relatorio):
     """Processa os dados do relatório em todas as camadas."""
     sheet = sheets_manager.get_sheet(relatorio)  # Obtém a planilha
     data = sheets_manager.get_data(sheet)  # Obtém os dados da planilha
+    df_trusted = data  # Converte os dados para DataFrame
 
     for camada in ['trusted']:
-        drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
+        drive_manager.save_data_to_layer(df_trusted.copy(), camada, relatorio)
+
+    return df_trusted  # Retorna o DataFrame para uso em outras funções
 
 def setup_logging():
     """Configura o logging para registrar informações e erros."""
