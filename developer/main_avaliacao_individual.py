@@ -22,7 +22,7 @@ sheets_manager = GoogleSheetsManager(auth.sheets_client)
 
 try:
     # Enviar notificação de início do processo
-    #notifier.enviar_notificacao(f"{timestamp} - Início do processo de transformação de dados.", processo=relatorio, status="sucesso")
+    notifier.enviar_notificacao(f"{timestamp} - Início do processo de transformação de dados.", processo=relatorio, status="sucesso")
 
     # Transformação do raw para trusted
     processar_camada_raw(sheets_manager, drive_manager, relatorio)
@@ -35,9 +35,9 @@ try:
     processar_fato_respostas(drive_manager, transformer, relatorio_final)
     
     # Enviar notificação de conclusão do processo com sucesso
-    #notifier.enviar_notificacao(f"{timestamp} - Transformação de dados concluída com sucesso.", processo=relatorio, status="sucesso")
+    notifier.enviar_notificacao(f"{timestamp} - Transformação de dados concluída com sucesso.", processo=relatorio, status="sucesso")
 
 except Exception as e:
     # Enviar notificação de falha no processo com o log de erro (Exception)
-    #notifier.enviar_notificacao(f"{timestamp} - Erro durante o processo de transformação: {str(e)}", processo=relatorio, status="falha")
+    notifier.enviar_notificacao(f"{timestamp} - Erro durante o processo de transformação: {str(e)}", processo=relatorio, status="falha")
     raise e

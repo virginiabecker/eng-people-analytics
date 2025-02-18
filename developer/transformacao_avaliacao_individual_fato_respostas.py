@@ -23,37 +23,28 @@ class DataTransformer:
         nova = re.sub(r'ç', 'c', nova)
         return nova
     
-    def normalizar_perguntas(self, pergunta):
-        fase1 = pergunta.split('.')[1].lstrip()
-        fase2 = re.sub(r'[^\w\s]', '', fase1)
-        fase3 = self.retirar_acento(fase2)
-        fase4 = re.sub(' ', '_', fase3)
-        return fase4
-    
     def verificar_email(self, email):
         padraoEmail = r'^[\w\-.]+@[\w-]+\.[a-zA-Z]{2,}$'
-        return "Pass" if re.match(padraoEmail, email) else "Email Incorreto"
+        return "Pass" if re.match(padraoEmail, email) else None
     
     def padronizar_datastring(self, dataStamp): 
         try:
             parsed_date = parse(str(dataStamp))
             return parsed_date.strftime("%d-%m-%Y %H:%M:%S")
         except (ValueError, TypeError):
-            return dataStamp #"Invalid Date"
+            return dataStamp 
     
     def renomear_colunas_autoavaliacao(self):
-        colunas = ['timestamp', 'emailRespondente', 'nomeRespondente', 'funcaoDesempenha', 'equipeParticipante']
-        self.df_raw.columns = colunas + [f'pergunta_{i}' for i in range(len(self.df_raw.columns) - len(colunas))]
+        colunas_fixas = ['timestamp', 'emailRespondente', 'nomeRespondente', 'funcaoDesempenha', 'equipeParticipante']
+        colunas_variaveis = [f'pergunta_{i+1}' for i in range(len(self.df_raw.columns) - len(colunas_fixas))]
+        self.df_raw.columns = colunas_fixas + colunas_variaveis
     
     def validar_email(self):
-        self.df_raw['emailRespondente'] = self.df_raw['emailRespondente'].apply(lambda x: x if self.verificar_email(x) == 'Pass' else None)
-           
-
+        self.df_raw['emailRespondente'] = self.df_raw['emailRespondente'].apply(self.verificar_email)
+    
     def clean_empty_rows(self):
-        df_copy = self.df_raw
-        df_copy = df_copy.drop_duplicates()
-        self.df_raw = df_copy
-            
+        self.df_raw.drop_duplicates(inplace=True)
+    
     def transformar_dados(self):
         self.renomear_colunas_autoavaliacao()
         self.validar_email()
@@ -61,7 +52,6 @@ class DataTransformer:
         self.clean_empty_rows()
         return self.df_raw
 
-# Para transformar o arquivo autoavaliacao da pasta trusted no formato modelo_fato_respostas
 class TransformerFatoRespostas:
     def __init__(self, df_trusted, file_name):
         self.df_trusted = pd.DataFrame(df_trusted)
@@ -69,53 +59,33 @@ class TransformerFatoRespostas:
 
     def transformar_trusted_fato_respostas(self):
         df_copy = self.df_trusted.copy()
-        # criaremos colunas de informações que são comuns a todos os relatórios
-        # coluna com a descrição do tipo de pergunta
-        tipo_perguntas = [
-            'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
-            'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
-            'sim/nao', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
-            'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
-            'Descritiva, texto de opinião'
-        ]
+        perguntas = df_copy.columns.tolist()[5:]  # Agora pega todas as colunas de perguntas
+        num_perguntas = len(perguntas)
         
-        # coluna com o tipo de dados das respostas
-        tipo_repostas = [
-            'int', 'int', 'int', 'int', 'int', 'int', 'int', 'int', 'boolean', 'int', 'int', 'int', 'int', 'int', 'int', 'int',
-            'str'
-        ]
-
-        # coluna com as perguntas
-        perguntas = df_copy.columns.tolist()[5:22]
+        tipo_perguntas = ['Quantitativa de 0 a 10'] * (num_perguntas - 1) + ['Descritiva, texto de opinião']
+        tipo_repostas = ['int'] * (num_perguntas - 1) + ['str']
+        
         all_df = []
         for i_entrevistado in range(df_copy.shape[0]):
-            row = df_copy.iloc[i_entrevistado].T
-            row = row.apply(lambda x: int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x)  # transformar todos os campos float para integer
-            respostas = row.iloc[5:22].tolist()
+            row = df_copy.iloc[i_entrevistado]
+            respostas = [int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x for x in row.iloc[5:].tolist()]
             
-            # Verificar se todas as listas têm o mesmo comprimento
-            if len(perguntas) == len(tipo_perguntas) == len(respostas) == len(tipo_repostas):
-                fato_resposta = {
-                    'timestamp': "Placeholder",
-                    'dsEmailRespondente': row.iloc[1],  # campo do email
-                    'dsNomeRespondente': row.iloc[2],  # campo do entrevistado
-                    'dsQualFuncaoDesempenha': row.iloc[3],  # campo da função
-                    'dsEquipeParticipante': row.iloc[4],  # campo da equipe
-                    'nmCadernoPergunta': 'Avaliação individual do time (respostas)',  # modificar para cada formulário
-                    'dsTituloPergunta': perguntas,  # lista com as perguntas
-                    'dsTipoPergunta': tipo_perguntas,  # lista com o tipo das perguntas
-                    'dsResposta': respostas,  # lista com as respostas
-                    'dsDataType': tipo_repostas  # lista com os tipos das respostas
-                }
-                df_fato_resposta = pd.DataFrame(fato_resposta).reset_index(drop=True)  # criar um dataframe do dicionário fato_reposta
-                all_df.append(df_fato_resposta)  # unir todos os dataframes em uma lista
-            else:
-                raise ValueError(f"As listas 'perguntas: '{len(perguntas)}, 'tipo_perguntas: '{len(tipo_perguntas)}, 'respostas: '{len(respostas)} e 'tipo_repostas: '{len(tipo_repostas)} devem ter o mesmo comprimento.")
+            fato_resposta = {
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'dsEmailRespondente': row.iloc[1],
+                'dsNomeRespondente': row.iloc[2],
+                'dsQualFuncaoDesempenha': row.iloc[3],
+                'dsEquipeParticipante': row.iloc[4],
+                'nmCadernoPergunta': 'Avaliação individual do time (respostas)',
+                'dsTituloPergunta': perguntas,
+                'dsTipoPergunta': tipo_perguntas,
+                'dsResposta': respostas,
+                'dsDataType': tipo_repostas
+            }
+            df_fato_resposta = pd.DataFrame(fato_resposta)
+            all_df.append(df_fato_resposta)
         
-        df_new = pd.concat(all_df)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        df_new['timestamp'] = timestamp
-        return df_new
+        return pd.concat(all_df, ignore_index=True)
 
 # Processo principal de transformação do raw para o trusted
 def processar_arquivo(drive_manager, relatorio_raw, relatorio):
