@@ -59,14 +59,14 @@ class TransformerFatoRespostas:
 
     def transformar_trusted_fato_respostas(self):
         df_copy = self.df_trusted.copy()
-        perguntas = df_copy.columns.tolist()[5:]  # Agora pega todas as colunas de perguntas
+        perguntas = df_copy.iloc[0,5:22].tolist()  # Agora pega todas as colunas de perguntas
         num_perguntas = len(perguntas)
         
         tipo_perguntas = ['Quantitativa de 0 a 10'] * (num_perguntas - 1) + ['Descritiva, texto de opinião']
         tipo_repostas = ['int'] * (num_perguntas - 1) + ['str']
         
         all_df = []
-        for i_entrevistado in range(df_copy.shape[0]):
+        for i_entrevistado in range(1,df_copy.shape[0]):
             row = df_copy.iloc[i_entrevistado]
             respostas = [int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x for x in row.iloc[5:].tolist()]
             
