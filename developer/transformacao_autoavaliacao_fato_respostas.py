@@ -81,9 +81,9 @@ class TransformerFatoRespostas:
         tipo_repostas = ['int', 'int', 'int', 'int', 'int', 'int', 'int', 'int', 'boolean', 'int', 'int', 'int', 'int', 'int', 'int', 'int',
                          'str']
         # coluna com as perguntas
-        perguntas = df_copy.columns.tolist()[5:22]
+        perguntas = df_copy.iloc[0,5:22].tolist()
         all_df = []
-        for i_entrevistado in range(df_copy.shape[0]):
+        for i_entrevistado in range(1,df_copy.shape[0]):
             row = df_copy.iloc[i_entrevistado].T
             row = row.apply(lambda x: int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x)  # transformar todos os campos float para integer
             fato_resposta = {'timestamp': "Placeholder",
