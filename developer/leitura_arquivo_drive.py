@@ -117,23 +117,26 @@ class GoogleDriveManager:
                 updated_df = pd.concat([existing_df, new_df], ignore_index=True)
                 logging.info(f"Dados apendados à camada {camada}.")
             else:
-                logging.error(f"Arquivo {file_name} não encontrado na camada {camada}.")
-                raise FileNotFoundError(f"Arquivo {file_name} não encontrado na camada {camada}.")
+                updated_df = pd.DataFrame(data)
+                logging.info(f"Arquivo {file_name} criado na camada {camada}.")
 
             # Salva o arquivo atualizado
             updated_df.to_excel(file_name, index=False, header=True)
 
             # Faz upload do novo arquivo
             file_metadata = {
-                'name': file_name,
-                'parents': [folder_id]
+                'name': file_name
             }
             media = MediaFileUpload(file_name, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            uploaded_file = self.drive_service.files().update(fileId=file_id, body=file_metadata, media_body=media, fields='id').execute()
-            logging.info(f"Arquivo atualizado na camada {camada}. ID: {uploaded_file.get('id')}")
+            if file_id:
+                uploaded_file = self.drive_service.files().update(fileId=file_id, body=file_metadata, media_body=media, fields='id').execute()
+                logging.info(f"Arquivo atualizado na camada {camada}. ID: {uploaded_file.get('id')}")
+            else:
+                file_metadata['parents'] = [folder_id]
+                uploaded_file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                logging.info(f"Arquivo criado na camada {camada}. ID: {uploaded_file.get('id')}")
 
             # Remove o arquivo local após o upload
-            media = None
             os.remove(file_name)
 
         except Exception as e:
@@ -168,7 +171,6 @@ def setup_logging():
 
 if __name__ == "__main__":
     setup_logging()
-
     auth = GoogleAuthenticator()
     sheets_manager = GoogleSheetsManager(auth.sheets_client)
     drive_manager = GoogleDriveManager(auth.drive_service)
