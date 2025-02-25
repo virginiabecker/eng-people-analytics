@@ -113,11 +113,11 @@ class GoogleDriveManager:
             if file_id:
                 self.download_existing_file(file_id, file_name)
                 existing_df = pd.read_excel(file_name)
-                new_df = pd.DataFrame(data.copy())
+                new_df = pd.DataFrame(data[1:], columns=data[0])  # Ignora o header dos novos dados
                 updated_df = pd.concat([existing_df, new_df], ignore_index=True)
                 logging.info(f"Dados apendados à camada {camada}.")
             else:
-                updated_df = pd.DataFrame(data)
+                updated_df = pd.DataFrame(data[1:], columns=data[0])  # Inclui o header apenas uma vez
                 logging.info(f"Criando novo arquivo na camada {camada}.")
 
             # Salva o arquivo atualizado
