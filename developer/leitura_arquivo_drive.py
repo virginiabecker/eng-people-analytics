@@ -47,7 +47,7 @@ class GoogleSheetsManager:
 
     def get_sheet(self, relatorio):
         """Obtém a planilha pelo ID correspondente ao relatório."""
-        if relatorio not in self.sheet_ids:
+        if (relatorio not in self.sheet_ids):
             logging.error(f"Erro ao acessar a planilha: Relatório '{relatorio}' inválido.")
             raise ValueError(f"Relatório '{relatorio}' não encontrado.")
 
@@ -117,16 +117,11 @@ class GoogleDriveManager:
                 updated_df = pd.concat([existing_df, new_df], ignore_index=True)
                 logging.info(f"Dados apendados à camada {camada}.")
             else:
-                updated_df = pd.DataFrame(data[1:], columns=data[0])  # Inclui o header apenas uma vez
-                logging.info(f"Criando novo arquivo na camada {camada}.")
+                logging.error(f"Arquivo {file_name} não encontrado na camada {camada}.")
+                raise FileNotFoundError(f"Arquivo {file_name} não encontrado na camada {camada}.")
 
             # Salva o arquivo atualizado
             updated_df.to_excel(file_name, index=False, header=True)
-
-            # Remove o arquivo antigo do Google Drive (se existir)
-            if file_id:
-                self.drive_service.files().delete(fileId=file_id).execute()
-                logging.info(f"Arquivo antigo {file_name} removido do Google Drive.")
 
             # Faz upload do novo arquivo
             file_metadata = {
@@ -134,8 +129,8 @@ class GoogleDriveManager:
                 'parents': [folder_id]
             }
             media = MediaFileUpload(file_name, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            uploaded_file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-            logging.info(f"Arquivo enviado para {camada}. ID: {uploaded_file.get('id')}")
+            uploaded_file = self.drive_service.files().update(fileId=file_id, body=file_metadata, media_body=media, fields='id').execute()
+            logging.info(f"Arquivo atualizado na camada {camada}. ID: {uploaded_file.get('id')}")
 
             # Remove o arquivo local após o upload
             media = None
@@ -181,4 +176,3 @@ if __name__ == "__main__":
     processar_camada_raw(sheets_manager, drive_manager, relatorio)
     processar_camada_trusted(sheets_manager, drive_manager, relatorio)
 
-    
