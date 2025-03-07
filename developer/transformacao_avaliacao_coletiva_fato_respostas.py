@@ -32,8 +32,10 @@ class DataTransformer:
         return fase4
     
     def verificar_email(self, email):
-        padraoEmail = r'^[\w\-.]+@[\w-]+\.[a-zA-Z]{2,}$'
-        return "Pass" if re.match(padraoEmail, email) else "Email Incorreto"
+        if isinstance(email, str):
+            padraoEmail = r'^[\w\-.]+@[\w-]+\.[a-zA-Z]{2,}$'
+            return "Pass" if re.match(padraoEmail, email) else "Email Incorreto"
+        return "Email Incorreto"
     
     def padronizar_datastring(self, dataStamp): 
         try:
@@ -47,7 +49,7 @@ class DataTransformer:
         self.df_raw.columns = colunas + [f'pergunta_{i}' for i in range(len(self.df_raw.columns) - len(colunas))]
     
     def validar_email(self):
-        self.df_raw['emailRespondente'] = self.df_raw['emailRespondente'].apply(lambda x: x if self.verificar_email(x) == 'Pass' else None)
+        self.df_raw['emailRespondente'] = self.df_raw['emailRespondente'].astype(str).apply(lambda x: x if self.verificar_email(x) == 'Pass' else None)
            
 
     def clean_empty_rows(self):
@@ -125,6 +127,7 @@ def processar_arquivo(drive_manager, relatorio_raw, relatorio):
         drive_manager.save_data_to_layer(df_transformado, camada, relatorio)
     file_to_save = f"{relatorio}_processado.xlsx"
     df_transformado.to_excel(file_to_save)
+    return file_to_save
 
 # Processo para transformar trusted em refined, no modelo da fato_respostas
 def processar_fato_respostas(drive_manager, transformer, relatorio):
@@ -142,9 +145,9 @@ if __name__ == "__main__":
     auth = GoogleAuthenticator()
     drive_service = auth.drive_service
     drive_manager = GoogleDriveManager(drive_service)
-    processar_arquivo(drive_manager, file_name, relatorio_raw)
-    df_trusted = pd.read_excel(f"{relatorio}_processado.xlsx")
-    transformer = TransformerFatoRespostas(df_trusted,file_name)
+    file_to_save = processar_arquivo(drive_manager, file_name, relatorio_raw)
+    df_trusted = pd.read_excel(file_to_save)
+    transformer = TransformerFatoRespostas(df_trusted, file_name)
     processar_fato_respostas(drive_manager, transformer, relatorio_final)
 
 
