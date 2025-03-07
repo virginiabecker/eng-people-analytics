@@ -5,9 +5,8 @@ import numpy as np
 from datetime import datetime
 from leitura_arquivo_drive import *
 
-# Caminho para a credencial da conta de serviço
-CREDENTIALS_PATH = 'credentials/people-analytics-pipoca-agil-google-drive.json'
-# Transformação de dados
+credentials_path = 'cretentials/people-analytics-pipoca-agil-google-drive.json'
+
 class DataTransformer:
     def __init__(self, df_raw, file_name):
         self.df_raw = df_raw
@@ -24,8 +23,10 @@ class DataTransformer:
         return nova
     
     def verificar_email(self, email):
-        padraoEmail = r'^[\w\-.]+@[\w-]+\.[a-zA-Z]{2,}$'
-        return "Pass" if re.match(padraoEmail, email) else None
+        if isinstance(email, str):
+            padraoEmail = r'^[\w\-.]+@[\w-]+\.[a-zA-Z]{2,}$'
+            return "Pass" if re.match(padraoEmail, email) else None
+        return None
     
     def padronizar_datastring(self, dataStamp): 
         try:
@@ -40,7 +41,7 @@ class DataTransformer:
         self.df_raw.columns = colunas_fixas + colunas_variaveis
     
     def validar_email(self):
-        self.df_raw['emailRespondente'] = self.df_raw['emailRespondente'].apply(self.verificar_email)
+        self.df_raw['emailRespondente'] = self.df_raw['emailRespondente'].astype(str).apply(self.verificar_email)
     
     def clean_empty_rows(self):
         self.df_raw.drop_duplicates(inplace=True)
@@ -59,14 +60,14 @@ class TransformerFatoRespostas:
 
     def transformar_trusted_fato_respostas(self):
         df_copy = self.df_trusted.copy()
-        perguntas = df_copy.iloc[0,5:22].tolist()  # Agora pega todas as colunas de perguntas
+        perguntas = df_copy.columns.tolist()[5:]  # Agora pega todas as colunas de perguntas
         num_perguntas = len(perguntas)
         
         tipo_perguntas = ['Quantitativa de 0 a 10'] * (num_perguntas - 1) + ['Descritiva, texto de opinião']
         tipo_repostas = ['int'] * (num_perguntas - 1) + ['str']
         
         all_df = []
-        for i_entrevistado in range(1,df_copy.shape[0]):
+        for i_entrevistado in range(df_copy.shape[0]):
             row = df_copy.iloc[i_entrevistado]
             respostas = [int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x for x in row.iloc[5:].tolist()]
             
@@ -87,41 +88,37 @@ class TransformerFatoRespostas:
         
         return pd.concat(all_df, ignore_index=True)
 
-# Processo principal de transformação do raw para o trusted
-def processar_arquivo(drive_manager, relatorio_raw, relatorio):
-    folder_id = drive_manager.Id_camada['raw']
-    file_id = drive_manager.get_file_id(relatorio_raw, folder_id)
-    if not file_id:
-        raise ValueError(f"Arquivo {relatorio_raw} não encontrado na camada 'raw'.")
-    drive_manager.download_existing_file(file_id, relatorio_raw)
-    df_raw = pd.read_excel(relatorio_raw)
-    transformer = DataTransformer(df_raw, relatorio_raw)
-    df_transformado = transformer.transformar_dados()
-    for camada in ['trusted']:
-        drive_manager.save_data_to_layer(df_transformado, camada, relatorio)
-    file_to_save = f"{relatorio}_processado.xlsx"
-    df_transformado.to_excel(file_to_save)
+def processar_fato_respostas(drive_manager, transformer, relatorio_final):
+    df_fato_respostas = transformer.transformar_trusted_fato_respostas()
+    drive_manager.save_data_to_layer(df_fato_respostas, 'refined', relatorio_final)
 
-# Processo para transformar trusted em refined, no modelo da fato_respostas
-def processar_fato_respostas(drive_manager, transformer, relatorio):
-    data = transformer.transformar_trusted_fato_respostas()
-    for camada in ['refined']:
-        drive_manager.save_data_to_layer(data.copy(), camada, relatorio)
-
-# Executar o processamento
 if __name__ == "__main__":
     setup_logging()
     relatorio_raw = "avaliacao_individual.xlsx"
-    file_name = "avaliacao_individual.xlsx"
     relatorio = "avaliacao_individual"
     relatorio_final = 'fato_respostas'
     auth = GoogleAuthenticator()
     drive_service = auth.drive_service
     drive_manager = GoogleDriveManager(drive_service)
-    processar_arquivo(drive_manager, file_name, relatorio_raw)
+    
+    file_id = drive_manager.get_file_id(relatorio_raw, drive_manager.Id_camada['raw'])
+    if not file_id:
+        raise ValueError(f"Arquivo {relatorio_raw} não encontrado na camada 'raw'.")
+    
+    drive_manager.download_existing_file(file_id, relatorio_raw)
+    df_raw = pd.read_excel(relatorio_raw)
+    transformer = DataTransformer(df_raw, relatorio_raw)
+    df_transformado = transformer.transformar_dados()
+    
+    if df_transformado.empty:
+        raise ValueError("Nenhum dado válido após a transformação!")
+    
+    drive_manager.save_data_to_layer(df_transformado, 'trusted', relatorio)
+    df_transformado.to_excel(f"{relatorio}_processado.xlsx")
+    
     df_trusted = pd.read_excel(f"{relatorio}_processado.xlsx")
-    transformer = TransformerFatoRespostas(df_trusted,file_name)
-    processar_fato_respostas(drive_manager, transformer, relatorio_final)
-
-
+    transformer_fato = TransformerFatoRespostas(df_trusted, relatorio_raw)
+    df_fato_respostas = transformer_fato.transformar_trusted_fato_respostas()
+    
+    drive_manager.save_data_to_layer(df_fato_respostas, 'refined', relatorio_final)
 
