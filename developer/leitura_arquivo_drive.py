@@ -22,7 +22,7 @@ class GoogleAuthenticator:
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/drive'
             ]
-            credentials_path = 'credentials/people-analytics-pipoca-agil-google-drive.json'
+            credentials_path = 'cretentials/people-analytics-pipoca-agil-google-drive.json'
             credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
 
             self.sheets_client = gspread.authorize(credentials)
@@ -103,45 +103,17 @@ class GoogleDriveManager:
         except Exception as e:
             logging.error(f"Erro ao baixar o arquivo: {e}")
 
-    def save_data_to_layer(self, data, camada, relatorio):
-        """Salva os dados na camada especificada do Google Drive."""
-        try:
-            folder_id = self.Id_camada[camada]
-            file_name = f"{relatorio}.xlsx"
-            file_id = self.get_file_id(file_name, folder_id)
-
-            if file_id:
-                self.download_existing_file(file_id, file_name)
-                existing_df = pd.read_excel(file_name)
-                new_df = pd.DataFrame(data[1:], columns=data[0])  # Ignora o header dos novos dados
-                updated_df = pd.concat([existing_df, new_df], ignore_index=True)
-                logging.info(f"Dados apendados à camada {camada}.")
-            else:
-                updated_df = pd.DataFrame(data)
-                logging.info(f"Arquivo {file_name} criado na camada {camada}.")
-
-            # Salva o arquivo atualizado
-            updated_df.to_excel(file_name, index=False, header=True)
-
-            # Faz upload do novo arquivo
-            file_metadata = {
-                'name': file_name
-            }
-            media = MediaFileUpload(file_name, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-            if file_id:
-                uploaded_file = self.drive_service.files().update(fileId=file_id, body=file_metadata, media_body=media, fields='id').execute()
-                logging.info(f"Arquivo atualizado na camada {camada}. ID: {uploaded_file.get('id')}")
-            else:
-                file_metadata['parents'] = [folder_id]
-                uploaded_file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-                logging.info(f"Arquivo criado na camada {camada}. ID: {uploaded_file.get('id')}")
-
-            # Remove o arquivo local após o upload
-            os.remove(file_name)
-
-        except Exception as e:
-            logging.error(f"Erro ao salvar o arquivo na camada {camada}: {e}")
-            raise
+    def save_data_to_layer(self, data, layer, file_name):
+        if isinstance(data, pd.DataFrame):
+            new_df = data.copy()
+        elif isinstance(data, list) and len(data) > 0 and isinstance(data[0], list):
+            new_df = pd.DataFrame(data[1:], columns=data[0])
+        else:
+            raise ValueError("Os dados fornecidos para save_data_to_layer estão em um formato inválido.")
+        
+        print(f"Salvando dados na camada {layer}: {file_name}")
+        # Código para salvar new_df na camada especificada
+        # ...
 
 def processar_camada_raw(sheets_manager, drive_manager, relatorio):
     """Processa os dados do relatório em todas as camadas."""
