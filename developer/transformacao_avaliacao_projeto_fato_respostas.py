@@ -7,7 +7,7 @@ from datetime import datetime
 from leitura_arquivo_drive import *
 
 # Caminho para a credencial da conta de serviço
-CREDENTIALS_PATH = 'credentials/people-analytics-pipoca-agil-google-drive.json'
+CREDENTIALS_PATH = 'cretentials/people-analytics-pipoca-agil-google-drive.json'
 
 # Transformação de dados
 class DataTransformer:
@@ -70,44 +70,42 @@ class TransformerFatoRespostas:
 
     def transformar_trusted_fato_respostas(self):
         df_copy = pd.DataFrame(self.df_trusted)
-        # criaremos colunas de informações que são comuns a todos os relatórios
-        # coluna com a descrição do tipo de pergunta
         tipo_perguntas = [
             'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
-            'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10,', 'Quantitativa de 0 a 10',
+            'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
             'sim/nao', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
             'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10', 'Quantitativa de 0 a 10',
             'Descritiva, texto de opinião'
         ]
-        # coluna com o tipo de dados das respostas
         tipo_repostas = [
             'int', 'int', 'int', 'int', 'int', 'int', 'int', 'int', 'boolean', 'int', 'int', 'int', 'int', 'int', 'int', 'int',
             'str'
         ]
-        # coluna com as perguntas
-        perguntas = df_copy.iloc[0, 5:22].tolist()
+        perguntas = df_copy.columns.tolist()[5:22]
         all_df = []
-        for i_entrevistado in range(1, df_copy.shape[0]):
-            row = df_copy.iloc[i_entrevistado].T
-            row = row.apply(lambda x: int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x)  # transformar todos os campos float para integer
+        for i_entrevistado in range(df_copy.shape[0]):
+            row = df_copy.iloc[i_entrevistado]
+            respostas = [int(x) if pd.notna(x) and isinstance(x, (np.float64, float)) else x for x in row.iloc[5:22].tolist()]
             fato_resposta = {
-                'timestamp': "Placeholder",
-                'dsEmailRespondente': row.iloc[1],  # campo do email
-                'dsNomeRespondente': row.iloc[2],  # campo do entrevistado
-                'dsQualFuncaoDesempenha': row.iloc[3],  # campo da função
-                'dsEquipeParticipante': row.iloc[4],  # campo da equipe
-                'nmCadernoPergunta': 'Avaliação do projeto (respostas)',  # modificar para cada formulário
-                'dsTituloPergunta': perguntas,  # lista com as perguntas
-                'dsTipoPergunta': tipo_perguntas,  # lista com o tipo das perguntas
-                'dsResposta': row.iloc[5:22],  # lista com as respotas
-                'dsDataType': tipo_repostas  # lista com os tipos das respostas
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                'dsEmailRespondente': row.iloc[1],
+                'dsNomeRespondente': row.iloc[2],
+                'dsQualFuncaoDesempenha': row.iloc[3],
+                'dsEquipeParticipante': row.iloc[4],
+                'nmCadernoPergunta': 'Avaliação do projeto (respostas)',
+                'dsTituloPergunta': perguntas,
+                'dsTipoPergunta': tipo_perguntas,
+                'dsResposta': respostas,
+                'dsDataType': tipo_repostas
             }
-            df_fato_resposta = pd.DataFrame(fato_resposta).reset_index(drop=True)  # criar um dataframe do dicionário fato_reposta
-            all_df.append(df_fato_resposta)  # unir todos os dataframes en uma lista
-        df_new = pd.concat(all_df)
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        df_new['timestamp'] = timestamp
-        return df_new
+            # Garantir que todas as listas tenham o mesmo comprimento
+            max_length = max(len(fato_resposta[key]) for key in fato_resposta if isinstance(fato_resposta[key], list))
+            for key in fato_resposta:
+                if isinstance(fato_resposta[key], list):
+                    fato_resposta[key] += [None] * (max_length - len(fato_resposta[key]))
+            df_fato_resposta = pd.DataFrame(fato_resposta)
+            all_df.append(df_fato_resposta)
+        return pd.concat(all_df, ignore_index=True)
 
 # Processo principal de transformação do raw para o trusted
 def processar_arquivo(drive_manager, relatorio_raw, relatorio):
@@ -123,6 +121,7 @@ def processar_arquivo(drive_manager, relatorio_raw, relatorio):
         drive_manager.save_data_to_layer(df_transformado, camada, relatorio)
     file_to_save = f"{relatorio}_processado.xlsx"
     df_transformado.to_excel(file_to_save)
+    return file_to_save
 
 # Processo para transformar trusted em refined, no modelo da fato_respostas
 def processar_fato_respostas(drive_manager, transformer, relatorio):
@@ -140,8 +139,8 @@ if __name__ == "__main__":
     auth = GoogleAuthenticator()
     drive_service = auth.drive_service
     drive_manager = GoogleDriveManager(drive_service)
-    processar_arquivo(drive_manager, file_name, relatorio_raw)
-    df_trusted = pd.read_excel(f"{relatorio}_processado.xlsx")
+    file_to_save = processar_arquivo(drive_manager, file_name, relatorio_raw)
+    df_trusted = pd.read_excel(file_to_save)
     transformer = TransformerFatoRespostas(df_trusted, file_name)
     processar_fato_respostas(drive_manager, transformer, relatorio_final)
 
