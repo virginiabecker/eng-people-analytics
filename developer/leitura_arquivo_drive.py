@@ -22,7 +22,7 @@ class GoogleAuthenticator:
                 'https://www.googleapis.com/auth/spreadsheets',
                 'https://www.googleapis.com/auth/drive'
             ]
-            credentials_path = 'cretentials/people-analytics-pipoca-agil-google-drive.json'
+            credentials_path = 'credentials/people-analytics-pipoca-agil-google-drive.json'
             credentials = Credentials.from_service_account_file(credentials_path, scopes=scopes)
 
             self.sheets_client = gspread.authorize(credentials)

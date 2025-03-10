@@ -7,7 +7,7 @@ from datetime import datetime
 from leitura_arquivo_drive import *
 
 # Caminho para a credencial da conta de serviço
-CREDENTIALS_PATH = 'cretentials/people-analytics-pipoca-agil-google-drive.json'
+CREDENTIALS_PATH = 'credentials/people-analytics-pipoca-agil-google-drive.json'
 
 # Transformação de dados
 class DataTransformer:

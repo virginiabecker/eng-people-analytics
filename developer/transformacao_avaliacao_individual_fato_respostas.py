@@ -5,7 +5,7 @@ import numpy as np
 from datetime import datetime
 from leitura_arquivo_drive import *
 
-credentials_path = 'cretentials/people-analytics-pipoca-agil-google-drive.json'
+credentials_path = 'credentials/people-analytics-pipoca-agil-google-drive.json'
 
 class DataTransformer:
     def __init__(self, df_raw, file_name):
